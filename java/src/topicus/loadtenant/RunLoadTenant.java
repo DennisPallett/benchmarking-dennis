@@ -28,6 +28,24 @@ public class RunLoadTenant extends RunDatabaseScript {
 				.withLongOpt("tenant-id")
 				.create()
 		);	
+		
+		options.addOption(
+				OptionBuilder
+				.hasArg(false)
+				.isRequired(false)
+				.withDescription("Whether or not to automatically stop when tenant is deployed")
+				.withLongOpt("stop-on-deployed")
+				.create()
+		);
+		
+		options.addOption(
+				OptionBuilder
+				.hasArg(false)
+				.isRequired(false)
+				.withDescription("Whether or not to automatically stop when load/log file already exists")
+				.withLongOpt("stop-on-overwrite")
+				.create()
+		);
 	}
 	
 	public void run (String[] args)  throws Exception {
@@ -45,16 +63,11 @@ public class RunLoadTenant extends RunDatabaseScript {
 
 	/**
 	 * @param args
+	 * @throws Exception 
 	 */
-	public static void main(String[] args) {
+	public static void main(String[] args) throws Exception {
 		RunLoadTenant runner = new RunLoadTenant();
-		
-		try {
-			runner.run(args);
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-
+		runner.run(args);
 	}
 
 }

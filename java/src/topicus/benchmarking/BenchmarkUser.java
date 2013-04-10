@@ -24,7 +24,7 @@ public class BenchmarkUser extends Thread {
 	protected int nodes;
 	protected int numberOfUsers;
 		
-	protected Benchmarks owner;
+	protected BenchmarksScript owner;
 	
 	protected boolean isReady = false;
 	protected boolean isFailed = false;
@@ -32,7 +32,7 @@ public class BenchmarkUser extends Thread {
 	
 	protected Exception failException = null;
 	
-	public BenchmarkUser (Benchmarks owner, int userId, List<String[]> queryList, 
+	public BenchmarkUser (BenchmarksScript owner, int userId, List<String[]> queryList, 
 			int iterations, int nodes) throws SQLException {
 		this.owner = owner;
 		this.userId = userId;

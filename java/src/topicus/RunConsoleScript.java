@@ -9,7 +9,7 @@ import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.OptionBuilder;
 import org.apache.commons.cli.Options;
 
-import topicus.benchmarking.Benchmarks;
+import topicus.benchmarking.BenchmarksScript;
 import topicus.databases.AbstractDatabase;
 import topicus.databases.VerticaDatabase;
 

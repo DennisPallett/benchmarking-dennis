@@ -11,6 +11,7 @@ public class ExitCodes {
 	public static final int INVALID_JDBC_DRIVER = 8;
 	public static final int NO_START = 9;
 	public static final int NOT_DEPLOYED = 10;
+	public static final int CANCELLED = 11;
 	
 	private ExitCodes () {}
 	

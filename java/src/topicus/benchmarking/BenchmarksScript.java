@@ -47,7 +47,7 @@ import topicus.databases.AbstractDatabase;
 import au.com.bytecode.opencsv.CSVReader;
 import au.com.bytecode.opencsv.CSVWriter;
 
-public class Benchmarks extends DatabaseScript {
+public class BenchmarksScript extends DatabaseScript {
 	protected static final int TOO_SLOW = 5000;
 	
 	protected List<String[]> queryList;
@@ -74,7 +74,7 @@ public class Benchmarks extends DatabaseScript {
 	
 	protected int slowCount = 0;
 	
-	public Benchmarks(String type, AbstractDatabase database) {
+	public BenchmarksScript(String type, AbstractDatabase database) {
 		super(type, database);
 	}
 				

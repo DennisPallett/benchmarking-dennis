@@ -56,15 +56,13 @@ public class RunBenchmarks extends RunDatabaseScript {
 				.withLongOpt("iterations")
 				.create("i")
 		);
-		
-		
 	}
 	
 	public void run (String[] args)  throws Exception {
 		super.run(args);
 		
-		Benchmarks benchmark = null;
-		benchmark = new Benchmarks(this.type, this.database);
+		BenchmarksScript benchmark = null;
+		benchmark = new BenchmarksScript(this.type, this.database);
 		
 		benchmark.setCliArgs(cliArgs);
 		benchmark.run();

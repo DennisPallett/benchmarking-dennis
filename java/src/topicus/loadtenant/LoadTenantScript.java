@@ -17,6 +17,7 @@ import au.com.bytecode.opencsv.CSVWriter;
 
 import topicus.ConsoleScript;
 import topicus.DatabaseScript;
+import topicus.ExitCodes;
 import topicus.databases.AbstractDatabase;
 
 public class LoadTenantScript extends AbstractTenantScript {
@@ -62,13 +63,12 @@ public class LoadTenantScript extends AbstractTenantScript {
 		this.printLine("Stopping");
 	}
 	
-	protected void _checkIfDeployed () throws SQLException, IOException {
+	protected void _checkIfDeployed () throws SQLException, IOException, AlreadyDeployedException {
 		if (this.isTenantDeployed()) {
-			this.printLine("Tenant #" + this.tenantId + " is already deployed!");
+			this.printError("Tenant #" + this.tenantId + " is already deployed!");
 			
 			if (this.cliArgs.hasOption("stop-on-deployed")) {
-				printLine("--stop-on-deployed detected, stopping");			
-				System.exit(0);
+				throw new AlreadyDeployedException();
 			} else {
 				boolean doDeploy = this.confirmBoolean("Are you sure you want to re-deploy? (y/n)");
 				if (!doDeploy) {
@@ -130,7 +130,7 @@ public class LoadTenantScript extends AbstractTenantScript {
 		this.printLine("Found " + this.nodeCount + " nodes");
 		
 		// output directory
-		this.outputDirectory = cliArgs.getOptionValue("output");
+		this.outputDirectory = cliArgs.getOptionValue("output", "");
 		File outputDir = new File(this.outputDirectory);
 		if (outputDir.exists() == false || outputDir.isFile()) {
 			throw new Exception("Invalid output directory specified");		
@@ -145,10 +145,9 @@ public class LoadTenantScript extends AbstractTenantScript {
 		
 		File currOutputFile = new File(this.outputFile);
 		if (currOutputFile.exists()) {
-			boolean doOverwrite = this.confirmBoolean("Results file already exists. Overwrite? (y/n): ");
-			if (!doOverwrite) {
-				printLine("Quitting benchmark tool");
-				System.exit(0);
+			this.printError("Results file already exists!");
+			if (this.cliArgs.hasOption("stop-on-overwrite") || this.confirmBoolean("Overwrite existing file? (y/n): ") == false) {
+				throw new OverwriteException();
 			}
 			
 			currOutputFile.delete();
@@ -157,5 +156,9 @@ public class LoadTenantScript extends AbstractTenantScript {
 		
 		this.resOut = new CSVWriter(new FileWriter(this.outputFile, true), '\t', CSVWriter.NO_QUOTE_CHARACTER);
 	}
+	
+	public class OverwriteException extends Exception {}
+	
+	public class AlreadyDeployedException extends Exception { }
 
 }
