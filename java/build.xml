@@ -54,6 +54,7 @@
 	
 	<target name="create-scripts" depends="create-jar">
 		<create-executables file="run-benchmarks" mainClass="topicus.benchmarking.RunBenchmarks" />
+		<create-executables file="run-all-benchmarks" mainClass="topicus.benchmarking.RunAllBenchmarks" />
 		<create-executables file="load-tenant" mainClass="topicus.loadtenant.RunLoadTenant" />
 		<create-executables file="unload-tenant" mainClass="topicus.loadtenant.RunUnloadTenant" />
 	</target>

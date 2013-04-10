@@ -27,6 +27,15 @@ public class RunAllBenchmarks extends RunDatabaseScript {
 		options.addOption(
 				OptionBuilder
 				.hasArg()
+				.isRequired()
+				.withDescription("Specify the CSV file that contains the test queries")
+				.withLongOpt("queries")
+				.create("q")
+		);	
+		
+		options.addOption(
+				OptionBuilder
+				.hasArg()
 				.withType(Number.class)
 				.withDescription("Specify the number of nodes to use")
 				.withLongOpt("nodes")
@@ -51,6 +60,8 @@ public class RunAllBenchmarks extends RunDatabaseScript {
 		
 		try {
 			runner.run(args);
+		} catch (AllBenchmarksScript.CancelledException e) {
+			System.err.println("Script has been cancelled by user!");
 		} catch (Exception e) {
 			e.printStackTrace();
 		}

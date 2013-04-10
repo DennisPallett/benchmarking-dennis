@@ -21,8 +21,10 @@ import topicus.ExitCodes;
 import topicus.databases.AbstractDatabase;
 
 public class LoadTenantScript extends AbstractTenantScript {
-	protected String tenantDirectory = "";
+	public class OverwriteException extends Exception {}	
+	public class AlreadyDeployedException extends Exception { }
 	
+	protected String tenantDirectory = "";	
 		
 	protected String outputDirectory;
 	protected String outputFile;
@@ -156,9 +158,5 @@ public class LoadTenantScript extends AbstractTenantScript {
 		
 		this.resOut = new CSVWriter(new FileWriter(this.outputFile, true), '\t', CSVWriter.NO_QUOTE_CHARACTER);
 	}
-	
-	public class OverwriteException extends Exception {}
-	
-	public class AlreadyDeployedException extends Exception { }
 
 }

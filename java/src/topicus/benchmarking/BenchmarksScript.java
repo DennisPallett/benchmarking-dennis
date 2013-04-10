@@ -48,6 +48,11 @@ import au.com.bytecode.opencsv.CSVReader;
 import au.com.bytecode.opencsv.CSVWriter;
 
 public class BenchmarksScript extends DatabaseScript {
+	public class OverwriteException extends Exception {}
+	public class InvalidNumberOfNodesException extends Exception {}
+	public class InvalidNumberOfTenantsException extends Exception {}
+	public class InvalidNumberOfUsersException extends Exception {}
+	
 	protected static final int TOO_SLOW = 5000;
 	
 	protected List<String[]> queryList;
@@ -101,7 +106,7 @@ public class BenchmarksScript extends DatabaseScript {
 			
 		// output directory
 		this.outputDirectory = cliArgs.getOptionValue("output");
-		File outputDir = new File(this.outputDirectory);
+		File outputDir = new File(this.outputDirectory, "");
 		if (outputDir.exists() == false || outputDir.isFile()) {
 			throw new Exception("Invalid output directory specified");		
 		}
@@ -117,22 +122,19 @@ public class BenchmarksScript extends DatabaseScript {
 		
 		if (this.tenantCount < this.numberOfUsers) {
 			this.printError("Not enough tenants in database for number of concurrent users");
-			System.exit(ExitCodes.INVALID_NUMBER_OF_USERS);
+			throw new InvalidNumberOfTenantsException();
 		}
 		
 		if (this.tenantCount != this.numberOfTenants) {
 			this.printError("Number of tenants (" + this.tenantCount + ") in database does not " +
 					"equal specified number of tenants (" + this.numberOfTenants + ")");
-			System.exit(ExitCodes.INVALID_NUMBER_OF_TENANTS);
+			throw new InvalidNumberOfTenantsException();
 		}
 		
 		if (this.nodeCount != this.nodes) {
 			this.printError("Number of online nodes (" + this.nodeCount + ") does not equal specified number of nodes (" + this.nodes + ")");
-			System.exit(ExitCodes.INVALID_NUMBER_OF_NODES);
-		}
-		
-		// setup benchmark users
-		this._setupUsers();
+			throw new InvalidNumberOfNodesException();
+		}	
 		
 		// create output file name and log file name
 		this.outputFile = this.outputDirectory + "benchmark-";
@@ -149,12 +151,12 @@ public class BenchmarksScript extends DatabaseScript {
 		
 		File currOutputFile = new File(this.outputFile);
 		if (currOutputFile.exists()) {
-			printLine("Results file already exists. Overwrite? (y/n): ", false, false);
-			String overwrite = br.readLine().toLowerCase();
-			printLine("");
-			if (!overwrite.equals("y") && !overwrite.equals("yes")) {
-				printLine("Quitting benchmark tool");
-				System.exit(ExitCodes.NO_OVERWRITE);
+			printError("Results file already exists");
+			if (this.cliArgs.hasOption("overwrite-existing") == false 
+				&&
+				(this.cliArgs.hasOption("stop-on-overwrite") || confirmBoolean("Overwrite existing file? (y/n)") == false)) {
+					printError("Unable to overwrite");
+					throw new OverwriteException();
 			}
 			
 			currOutputFile.delete();
@@ -163,6 +165,9 @@ public class BenchmarksScript extends DatabaseScript {
 		
 		this.resOut = new CSVWriter(new FileWriter(this.outputFile, true), '\t', CSVWriter.NO_QUOTE_CHARACTER);
 		this.setupLogging(this.logFile);	
+		
+		// setup benchmark users
+		this._setupUsers();
 		
 		if (!this.cliArgs.hasOption("start")) {
 			if (this.confirmBoolean("Run benchmarks?") == false) {
@@ -178,7 +183,6 @@ public class BenchmarksScript extends DatabaseScript {
 		
 		this.resOut.close();
 		this.logOut.close();
-		System.exit(0);
 	}
 	
 	public void addResult(int userId, int iteration, int set, int query1_time, int query2_time, int query3_time, int query4_time, int set_time) {

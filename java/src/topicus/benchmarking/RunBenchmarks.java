@@ -56,6 +56,24 @@ public class RunBenchmarks extends RunDatabaseScript {
 				.withLongOpt("iterations")
 				.create("i")
 		);
+		
+		options.addOption(
+				OptionBuilder
+				.hasArg(false)
+				.isRequired(false)
+				.withDescription("Whether or not to automatically stop when load/log file already exists")
+				.withLongOpt("stop-on-overwrite")
+				.create()
+		);
+		
+		options.addOption(
+				OptionBuilder
+				.hasArg(false)
+				.isRequired(false)
+				.withDescription("Automatically overwrite any existing files")
+				.withLongOpt("overwrite-existing")
+				.create()
+		);
 	}
 	
 	public void run (String[] args)  throws Exception {
@@ -71,15 +89,9 @@ public class RunBenchmarks extends RunDatabaseScript {
 	/**
 	 * @param args
 	 */
-	public static void main(String[] args) {
+	public static void main(String[] args) throws Exception {
 		RunBenchmarks runner = new RunBenchmarks();
-		
-		try {
-			runner.run(args);
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-
+		runner.run(args);
 	}
 
 }

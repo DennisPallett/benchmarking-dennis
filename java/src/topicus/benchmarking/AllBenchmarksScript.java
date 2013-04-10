@@ -15,6 +15,9 @@ import topicus.loadtenant.LoadTenantScript.AlreadyDeployedException;
 import topicus.loadtenant.RunLoadTenant;
 
 public class AllBenchmarksScript extends DatabaseScript {
+	public class CancelledException extends Exception {};	
+	public class InvalidQueriesFileException extends Exception {};
+	
 	protected int nodes;
 	protected int nodeCount;
 	
@@ -22,6 +25,8 @@ public class AllBenchmarksScript extends DatabaseScript {
 	
 	protected String outputDirectory;
 	protected String tenantDirectory;
+	
+	protected String queriesFile;		
 	
 	protected static final int[] users = {1, 5, 10, 20, 50, 100};
 	protected static final int[] tenants = {1, 5, 10, 20, 50, 100};
@@ -64,6 +69,13 @@ public class AllBenchmarksScript extends DatabaseScript {
 		this.nodes = Integer.parseInt(cliArgs.getOptionValue("nodes", "1"));
 		printLine("Number of nodes set to: " + this.nodes);
 		
+		this.queriesFile = cliArgs.getOptionValue("queries");
+		File testFile = new File(this.queriesFile);
+		if (testFile.exists() == false) {
+			throw new InvalidQueriesFileException();
+		}
+		printLine("Queries file set to: " + this.queriesFile);				
+		
 		this.printLine("Setting up connection with database");
 		this.conn = this._setupConnection();
 		this.printLine("Connection setup");
@@ -97,10 +109,10 @@ public class AllBenchmarksScript extends DatabaseScript {
 		}
 	}
 	
-	protected void _deployTenants(int numberOfTenants) throws IOException {
+	protected void _deployTenants(int numberOfTenants) throws Exception {
 		if (!this.confirmBoolean("Ready to deploy tenants 1 through " + numberOfTenants + ". Continue? (y/n)")) {
 			this.printError("Stopping");
-			System.exit(ExitCodes.CANCELLED);
+			throw new CancelledException();
 		}
 		
 		for(int tenantId=1; tenantId <= numberOfTenants; tenantId++) {
@@ -108,15 +120,95 @@ public class AllBenchmarksScript extends DatabaseScript {
 		}
 	}
 	
-	protected void _runBenchmark(int numberOfTenants, int numberOfUsers) {
-		this.printLine("Starting benchmark: " + this.nodes + " nodes, " + numberOfTenants + " tenants, " + numberOfUsers + " users");
+	protected void _runBenchmark(int numberOfTenants, int numberOfUsers) throws Exception {
+		this._runBenchmark(numberOfTenants, numberOfUsers, false);
 	}
 	
-	protected void _deployTenant(int tenantId) throws IOException {
+	protected void _runBenchmark(int numberOfTenants, int numberOfUsers, boolean doOverwrite) throws Exception {
+		boolean doBenchmark = this.confirmBoolean("Ready to run benchmark: " + this.nodes + " nodes, " 
+				+ numberOfTenants + " tenants, " + numberOfUsers + " users. Continue? (y/n)");
+		
+		if (!doBenchmark) {
+			this.printError("Stopping");
+			throw new CancelledException();
+		}
+		
+		ArrayList<String> args = new ArrayList<String>();
+		
+		args.add("--type");
+		args.add(this.type);
+		
+		args.add("--queries");
+		args.add(this.queriesFile);
+		
+		args.add("--nodes");
+		args.add(String.valueOf(this.nodes));
+		
+		args.add("--tenants");
+		args.add(String.valueOf(numberOfTenants));
+		
+		args.add("--users");
+		args.add(String.valueOf(numberOfUsers));
+				
+		args.add("--output");
+		args.add(this.outputDirectory);
+		
+		if (doOverwrite) {
+			args.add("--overwrite-existing");
+		} else {
+			args.add("--stop-on-overwrite");
+		}
+		
+		args.add("--start"); 
+		args.add("y");
+		
+		try {
+			RunBenchmarks.main( args.toArray(new String[args.size()]) );
+			
+		// can't overwrite existing results file
+		// likely means we already ran this benchmark
+		} catch (BenchmarksScript.OverwriteException e) {
+			// no problemo!
+			
+		// incorrect number of nodes behind database?
+		} catch (BenchmarksScript.InvalidNumberOfNodesException e) {
+			if (this.confirmBoolean("Run benchmark again? (y/n)")) {
+				this._runBenchmark(numberOfTenants, numberOfUsers, true);
+			} else {
+				printError("Stopping");
+				throw new CancelledException();
+			}
+			
+		// incorrect number of tenants in database?
+		// shouldn't be possible but could happen!
+		} catch (BenchmarksScript.InvalidNumberOfTenantsException e) {
+			if (this.confirmBoolean("Try to re-deploy tenants and run benchmark again? (y/n)")) {
+				this._deployTenants(numberOfTenants);
+				this._runBenchmark(numberOfTenants, numberOfUsers, true);
+			} else {
+				printError("Stopping");
+				throw new CancelledException();
+			}		
+			
+		// some other exception?
+		} catch (Exception e) {
+			this.printError("Failed to run benchmarks: " + e.getMessage());
+			if (this.confirmBoolean("Try to run again? (y/n)")) {
+				this._runBenchmark(numberOfTenants, numberOfUsers);
+			} else {
+				printError("Stopping");
+				throw new CancelledException();
+			}
+		}
+		
+		printLine("Benchmark finished");
+	}
+	
+	protected void _deployTenant(int tenantId) throws Exception {
 		this._deployTenant(tenantId, false);
 	}
 	
-	protected void _deployTenant(int tenantId, boolean doOverwrite) throws IOException {
+	protected void _deployTenant(int tenantId, boolean doOverwrite) throws Exception {
 		this.printLine("Deploying tenant #" + tenantId);
 		if (this.deployedTenants.contains(tenantId)) {
 			this.printLine("Tenant #" + tenantId + " is already deployed");
@@ -157,8 +249,8 @@ public class AllBenchmarksScript extends DatabaseScript {
 			if (this.confirmBoolean("Try to deploy again? (y/n)")) {
 				this._deployTenant(tenantId);
 			} else {
-				this.printError("Stopping");
-				System.exit(ExitCodes.CANCELLED);
+				printError("Stopping");
+				throw new CancelledException();
 			}
 		}
 		
@@ -166,5 +258,7 @@ public class AllBenchmarksScript extends DatabaseScript {
 		this.printLine("Tenant #" + tenantId + " deployed");
 		this.deployedTenants.add(tenantId);
 	}
+	
+	
 	
 }
