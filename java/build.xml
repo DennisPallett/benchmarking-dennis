@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<project basedir="." default="create-scripts" name="DWHBenchmarking">
+    <property environment="env"/>
+    <property name="ECLIPSE_HOME" value="../../../../Program Files/eclipse/Juno 4.2"/>
+    <property name="debuglevel" value="source,lines,vars"/>
+    <property name="target" value="1.6"/>
+    <property name="source" value="1.6"/>
+	
+	<macrodef name="create-executables">
+		<attribute name="mainClass" />
+		<attribute name="file" />
+		
+		<sequential>
+			<echo message="Executable: @{file}"/>
+			<echo file="build/@{file}.bat">java -cp scripts.jar @{mainClass} %*</echo>
+			<echo file="build/@{file}">java -cp scripts.jar @{mainClass} "$@"</echo>
+		</sequential>
+	</macrodef>
+	
+    <path id="DWHBenchmarking.classpath">
+        <pathelement location="bin"/>
+        <pathelement location="lib/opencsv-2.3.jar"/>
+        <pathelement location="lib/postgresql-9.2-1002.jdbc4.jar"/>
+        <pathelement location="lib/monetdb-jdbc-2.8.jar"/>
+        <pathelement location="lib/vertica-jdk5-6.0.1-0.jar"/>
+        <pathelement location="lib/mysql-connector-java-5.1.24-bin.jar"/>
+        <pathelement location="lib/commons-cli-1.2.jar"/>
+    </path>
+	
+    <target name="init">
+        <mkdir dir="bin"/>
+    	<mkdir dir="build"/>
+        <copy includeemptydirs="false" todir="bin">
+            <fileset dir="src">
+                <exclude name="**/*.g"/>
+                <exclude name="**/*.java"/>
+            </fileset>
+        </copy>
+    </target>
+	
+    <target name="clean">
+        <delete dir="bin"/>
+    </target>
+	
+    <target depends="clean" name="cleanall"/>
+	
+    <target depends="build-subprojects,build-project" name="build"/>
+	
+	<target name="create-jar" depends="build">
+		<jar jarfile="build/scripts.jar" basedir="bin" includes="**/*.class">
+			<zipgroupfileset dir="lib" includes="*.jar" excludes="" />				
+		</jar>
+	</target>
+	
+	<target name="create-scripts" depends="create-jar">
+		<create-executables file="run-benchmarks" mainClass="topicus.benchmarking.RunBenchmarks" />
+		<create-executables file="load-tenant" mainClass="topicus.loadtenant.RunLoadTenant" />
+		<create-executables file="unload-tenant" mainClass="topicus.loadtenant.RunUnloadTenant" />
+	</target>
+			
+    <target name="build-subprojects"/>
+	
+    <target depends="init" name="build-project">
+        <echo message="${ant.project.name}: ${ant.file}"/>
+        <javac debug="true" debuglevel="${debuglevel}" destdir="bin" includeantruntime="false" source="${source}" target="${target}">
+            <src path="src"/>
+            <classpath refid="DWHBenchmarking.classpath"/>
+        </javac>
+    </target>
+	
+    <target description="Build all projects which reference this project. Useful to propagate changes." name="build-refprojects"/>
+	
+    <target description="copy Eclipse compiler jars to ant lib directory" name="init-eclipse-compiler">
+        <copy todir="${ant.library.dir}">
+            <fileset dir="${ECLIPSE_HOME}/plugins" includes="org.eclipse.jdt.core_*.jar"/>
+        </copy>
+        <unzip dest="${ant.library.dir}">
+            <patternset includes="jdtCompilerAdapter.jar"/>
+            <fileset dir="${ECLIPSE_HOME}/plugins" includes="org.eclipse.jdt.core_*.jar"/>
+        </unzip>
+    </target>
+	
+    <target description="compile project with Eclipse compiler" name="build-eclipse-compiler">
+        <property name="build.compiler" value="org.eclipse.jdt.core.JDTCompilerAdapter"/>
+        <antcall target="build"/>
+    </target>
+	
+    
+</project>
