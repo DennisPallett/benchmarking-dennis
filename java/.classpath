@@ -8,5 +8,6 @@
 	<classpathentry kind="lib" path="C:/Users/Dennis/workspace/DWHBenchmarking/lib/vertica-jdk5-6.0.1-0.jar"/>
 	<classpathentry kind="lib" path="C:/Users/Dennis/workspace/DWHBenchmarking/lib/mysql-connector-java-5.1.24-bin.jar"/>
 	<classpathentry kind="lib" path="C:/Users/Dennis/workspace/DWHBenchmarking/lib/commons-cli-1.2.jar"/>
+	<classpathentry kind="lib" path="C:/Users/Dennis/Documents/GitHub/benchmarking-dennis/java/lib/commons-io-2.4.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

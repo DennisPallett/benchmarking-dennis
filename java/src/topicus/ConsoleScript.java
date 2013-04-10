@@ -34,6 +34,10 @@ public abstract class ConsoleScript {
 		this.printLine(msg, true, false);
 	}
 	
+	public void printLine(int msg) {
+		printLine(String.valueOf(msg));
+	}
+	
 	protected void setupLogging (String filename) throws IOException {
 		// setup logging
 		this.logOut = new FileWriter(filename);
