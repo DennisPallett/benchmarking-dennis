@@ -129,6 +129,7 @@ public class GenerateTenantScript extends ConsoleScript {
 			
 		}
 		
+		printLine("Writing lines");
 		FileUtils.writeStringToFile(newFile, stringBuffer.toString(), true);
 		printLine("Processed " + lineCounter + " rows");
 		
