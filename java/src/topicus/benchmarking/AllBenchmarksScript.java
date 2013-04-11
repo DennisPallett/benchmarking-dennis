@@ -52,8 +52,8 @@ public class AllBenchmarksScript extends DatabaseScript {
 	
 	protected String queriesFile;		
 	
-	protected static final int[] users = {1, 5, 10, 20, 50, 100};
-	protected static final int[] tenants = {1, 5, 10, 20, 50, 100};
+	protected static final int[] users = {1, 2, 5, 10, 20, 50, 100};
+	protected static final int[] tenants = {1, 2, 5, 10, 20, 50, 100};
 	
 	protected ArrayList<Integer> deployedTenants = new ArrayList<Integer>();
 	
@@ -62,9 +62,7 @@ public class AllBenchmarksScript extends DatabaseScript {
 	}
 
 	public void run () throws Exception {
-		printLine("Started-up benchmark tool for a complete set of benchmarks");	
-		
-		
+		printLine("Started-up benchmark tool for a complete set of benchmarks");		
 		
 		this._setOptions();
 		
