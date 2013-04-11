@@ -51,6 +51,7 @@ public class LoadSchemaScript extends DatabaseScript {
 		this.printLine("Starting deployment of schema");
 		
 		this._deploySchema();
+		this._loadBaseData();
 
 		this.printLine("Finished deployment");		
 		
@@ -67,6 +68,20 @@ public class LoadSchemaScript extends DatabaseScript {
 		this._deployMonthnamesTable();
 		this._deployTijdTable();
 		this._deployFactTable();
+	}
+	
+	protected void _loadBaseData () throws SQLException {
+		printLine("Loading base data");
+		
+		this.printLine("Loading month names...");
+		database.deployData(conn, this.baseDirectory + "month_names.tbl", "month_names");
+		this.printLine("Done");		
+		
+		this.printLine("Loading tijdtabel data...");
+		database.deployData(conn, this.baseDirectory + "tijd_data.tbl", "dim_tijdtabel");
+		this.printLine("Done");		
+		
+		printLine("Finished loading base data");
 	}
 	
 	protected void _deployFactTable() throws SQLException {

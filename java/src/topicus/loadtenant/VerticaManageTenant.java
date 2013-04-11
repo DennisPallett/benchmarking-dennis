@@ -44,13 +44,4 @@ public class VerticaManageTenant extends AbstractManageTenant {
 		this.conn.createStatement().execute("SELECT PURGE()");
 	}
 
-	@Override
-	public int deployData(String fileName, String tableName, String tenantDirectory)
-			throws SQLException {
-		Statement q = this.conn.createStatement();
-		int rows = q.executeUpdate("copy " + tableName + " from '" + tenantDirectory + fileName + "' delimiter '#'" +
-				" null as 'NULL' abort on error direct;");
-		return rows;
-	}
-
 }

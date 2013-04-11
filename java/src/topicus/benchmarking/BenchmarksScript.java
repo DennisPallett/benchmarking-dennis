@@ -171,7 +171,10 @@ public class BenchmarksScript extends DatabaseScript {
 		printLine("Quitting tool");	
 		
 		this.resOut.close();
-		this.logOut.close();
+		
+		if (this.logOut != null) {
+			this.logOut.close();
+		}
 	}
 	
 	public void addResult(int userId, int iteration, int set, int query1_time, int query2_time, int query3_time, int query4_time, int set_time) {

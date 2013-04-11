@@ -107,7 +107,7 @@ public class LoadTenantScript extends AbstractTenantScript {
 		this.printLine("Deploying `" + tableFile + "` into `" + tableName + "`");	
 		
 		long start = System.currentTimeMillis();
-		int rows = this.manageTenant.deployData(tableFile,  tableName, this.tenantDirectory);
+		int rows = this.database.deployData(this.conn, this.tenantDirectory + tableFile,  tableName);
 		int runTime = (int) (System.currentTimeMillis() - start);
 		
 		this.printLine("Inserted " + rows + " rows");

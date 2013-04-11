@@ -19,6 +19,8 @@ public abstract class AbstractDatabase {
 	
 	public abstract void createTable(Connection conn, String tableName, ArrayList<DbColumn> columns, String partitionBy) throws SQLException;
 	
+	public abstract int deployData(Connection conn, String fileName, String tableName) throws SQLException;
+	
 	public void createTable(Connection conn, String tableName, ArrayList<DbColumn> columns) throws SQLException {
 		this.createTable(conn, tableName, columns, null);
 	}

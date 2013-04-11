@@ -44,6 +44,14 @@ public class VerticaDatabase extends AbstractDatabase {
 		return nodeCount;
 	}
 	
+	public int deployData(Connection conn, String fileName, String tableName)
+			throws SQLException {
+		Statement q = conn.createStatement();
+		int rows = q.executeUpdate("copy " + tableName + " from '" + fileName + "' delimiter '#'" +
+				" null as 'NULL' abort on error direct;");
+		return rows;
+	}
+	
 	public void createTable(Connection conn, String tableName, ArrayList<DbColumn> columns, String partitionBy) throws SQLException {
 		// construct query
 		String query = "";
