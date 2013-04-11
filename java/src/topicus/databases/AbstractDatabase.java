@@ -2,6 +2,7 @@ package topicus.databases;
 
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.ArrayList;
 
 public abstract class AbstractDatabase {
 	protected String name;
@@ -13,6 +14,15 @@ public abstract class AbstractDatabase {
 	public abstract String getJdbcUrl ();
 	
 	public abstract int getNodeCount(Connection conn) throws SQLException; 
+	
+	public abstract void dropTable (Connection conn, String tableName) throws SQLException;
+	
+	public abstract void createTable(Connection conn, String tableName, ArrayList<DbColumn> columns, String partitionBy) throws SQLException;
+	
+	public void createTable(Connection conn, String tableName, ArrayList<DbColumn> columns) throws SQLException {
+		this.createTable(conn, tableName, columns, null);
+	}
+	
 	
 	public String getName () {
 		return this.name;

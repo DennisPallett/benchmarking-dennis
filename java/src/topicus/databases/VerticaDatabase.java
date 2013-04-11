@@ -4,6 +4,9 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.ArrayList;
+
+import org.apache.commons.lang3.StringUtils;
 
 public class VerticaDatabase extends AbstractDatabase {
 	
@@ -39,6 +42,76 @@ public class VerticaDatabase extends AbstractDatabase {
 		stmt.close();
 		
 		return nodeCount;
+	}
+	
+	public void createTable(Connection conn, String tableName, ArrayList<DbColumn> columns, String partitionBy) throws SQLException {
+		// construct query
+		String query = "";
+		
+		query += "CREATE TABLE " + tableName + " (";
+		
+		ArrayList<String> colSql = new ArrayList<String>();
+
+		for(DbColumn col : columns) {
+			String colQuery = "";
+			
+			colQuery += col.getName() + " ";
+			
+			switch(col.getType()) {
+				case INTEGER:
+					colQuery += "integer";
+					break;
+				case SMALL_INTEGER:
+					colQuery += "smallint";
+					break;
+				case VARCHAR:
+					colQuery += "character";
+					colQuery += " varying(" + col.getLength() + ")";
+					break;
+				case TIMESTAMP_WITHOUT_TIMEZONE:
+					colQuery += "timestamp without time zone";
+					break;
+				case DOUBLE:
+					colQuery += "numeric";
+					break;
+				default:
+					throw new SQLException("Unknown column type: " + col.getType());
+			}
+						
+			if (col.isPrimaryKey()) {
+				colQuery += " primary key";
+			} else if (col.isUnique()) {
+				colQuery += " unique";
+			} else if (col.isForeignKey()) {
+				colQuery += " references " + col.getForeignTable() + "(" + col.getForeignColumn() + ")";
+			}
+			
+			if (col.allowNull() == false) {
+				colQuery += " not null";
+			}		
+			
+			colSql.add(colQuery);
+		}
+		
+		query += StringUtils.join(colSql, ", ");
+		
+		query += ")";
+		
+		if (partitionBy != null) {
+			query += " partition by " + partitionBy;
+		}
+		
+		query += ";";
+
+		Statement q = conn.createStatement();
+		q.execute(query);
+		
+		q.close();
+	}
+	
+	public void dropTable(Connection conn, String tableName) throws SQLException {
+		Statement q = conn.createStatement();
+		q.execute("DROP TABLE IF EXISTS " + tableName + " CASCADE;");
 	}
 
 }
