@@ -1,8 +1,10 @@
 package topicus;
 
+import java.io.File;
 import java.util.ArrayList;
 
 import org.apache.commons.cli.OptionBuilder;
+import org.apache.commons.io.FileUtils;
 
 import topicus.databases.AbstractDatabase;
 import topicus.databases.VerticaDatabase;
@@ -43,7 +45,7 @@ public class RunDatabaseScript extends RunConsoleScript {
 		options.addOption(
 				OptionBuilder
 				.hasArg()
-				.isRequired()
+				.isRequired(false)
 				.withDescription("Specify the type of database")
 				.withLongOpt("type")
 				.create("t")
@@ -53,7 +55,18 @@ public class RunDatabaseScript extends RunConsoleScript {
 	public void run (String[] args) throws Exception {
 		super.run(args);
 		
-		this.type = cliArgs.getOptionValue("type");
+		String userHome = System.getProperty("user.home");
+		
+		File typeFile = new File(userHome + "/benchmark.type");
+		
+		if (cliArgs.hasOption("type")) {
+			type = cliArgs.getOptionValue("type", "");
+		} else if (typeFile.exists()) {
+			type = FileUtils.readFileToString(typeFile);
+		} else {
+			throw new Exception("No database type specified through file or argument!");
+		}
+						
 		if (this.validTypes.contains(type) == false) {
 			throw new Exception("Invalid database type `" + type + "` specified");
 		}
@@ -64,5 +77,6 @@ public class RunDatabaseScript extends RunConsoleScript {
 			throw new Exception("Unknown database type specified");
 		}
 	}
-
+	
+	
 }
