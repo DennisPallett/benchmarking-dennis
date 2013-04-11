@@ -39,6 +39,8 @@ public abstract class ConsoleScript {
 	}
 	
 	protected void setupLogging (String filename) throws IOException {
+		if (filename == null) return;
+		
 		// setup logging
 		this.logOut = new FileWriter(filename);
 		this.printLine("Logfile setup");

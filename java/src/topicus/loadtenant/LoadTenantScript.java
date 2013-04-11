@@ -18,6 +18,7 @@ import au.com.bytecode.opencsv.CSVWriter;
 import topicus.ConsoleScript;
 import topicus.DatabaseScript;
 import topicus.ExitCodes;
+import topicus.benchmarking.BenchmarksScript.MissingResultsFileException;
 import topicus.databases.AbstractDatabase;
 
 public class LoadTenantScript extends AbstractTenantScript {
@@ -38,6 +39,9 @@ public class LoadTenantScript extends AbstractTenantScript {
 	
 	public void run () throws Exception {	
 		printLine("Started-up tenant data loading tool");	
+		
+		this.setupLogging(cliArgs.getOptionValue("log-file"));
+		
 		printLine("Type set to: " + this.type);
 		
 		this.printLine("Setting up connection");
@@ -131,20 +135,11 @@ public class LoadTenantScript extends AbstractTenantScript {
 		this.nodeCount = this.database.getNodeCount(conn);
 		this.printLine("Found " + this.nodeCount + " nodes");
 		
-		// output directory
-		this.outputDirectory = cliArgs.getOptionValue("output", "");
-		File outputDir = new File(this.outputDirectory);
-		if (outputDir.exists() == false || outputDir.isFile()) {
-			throw new Exception("Invalid output directory specified");		
+		this.outputFile = cliArgs.getOptionValue("results-file", "");
+		if (this.outputFile.length() == 0) {
+			throw new MissingResultsFileException("You must specify a results filename with --results-file");
 		}
-		this.outputDirectory = outputDir.getAbsolutePath() + "/";
-		
-		this.outputFile = this.outputDirectory + "load-" + this.type +
-						  "-" + this.nodeCount + "-nodes" +
-						  "-tenant-" + this.tenantId;
-		this.setupLogging(this.outputFile + ".log");
-		this.outputFile += ".csv";
-		
+			
 		File currOutputFile = new File(this.outputFile);
 		if (currOutputFile.exists()) {
 			this.printError("Results file already exists!");
@@ -159,4 +154,10 @@ public class LoadTenantScript extends AbstractTenantScript {
 		this.resOut = new CSVWriter(new FileWriter(this.outputFile, true), '\t', CSVWriter.NO_QUOTE_CHARACTER);
 	}
 
+	public class MissingResultsFileException extends Exception {
+		public MissingResultsFileException(String string) {
+			super(string);
+		}
+	}
+	
 }

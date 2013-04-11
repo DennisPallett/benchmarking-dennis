@@ -57,7 +57,10 @@
 		<create-executables file="run-all-benchmarks" mainClass="topicus.benchmarking.RunAllBenchmarks" />
 		<create-executables file="load-tenant" mainClass="topicus.loadtenant.RunLoadTenant" />
 		<create-executables file="unload-tenant" mainClass="topicus.loadtenant.RunUnloadTenant" />
-		<create-executables file="generate-tenant" mainClass="topicus.data.RunGenerateTenant" />
+		
+		<echo message="Executable: generate-tenant" />
+		<echo file="build/generate-tenant.bat">java -Xmx4048M -cp scripts.jar topicus.data.RunGenerateTenant %*</echo>
+		<echo file="build/generate-tenant">java -Xmx4048M -cp scripts.jar topicus.data.RunGenerateTenant "$@"</echo>
 	</target>
 			
     <target name="build-subprojects"/>

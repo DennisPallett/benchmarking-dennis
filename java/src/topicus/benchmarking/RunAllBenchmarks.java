@@ -41,6 +41,31 @@ public class RunAllBenchmarks extends RunDatabaseScript {
 				.withLongOpt("nodes")
 				.create("n")
 		);
+		
+		options.addOption(
+				OptionBuilder
+				.hasArg()
+				.withType(Number.class)
+				.withDescription("Specify the number of iterations to perform")
+				.withLongOpt("iterations")
+				.create("i")
+		);
+		
+		options.addOption(
+				OptionBuilder
+				.hasArg()
+				.withDescription("Specify the S3 bucket to upload results to")
+				.withLongOpt("bucket")
+				.create()
+		);	
+		
+		options.addOption(
+				OptionBuilder
+				.hasArg()
+				.withDescription("Specify the AWS credentials file if using S3")
+				.withLongOpt("aws-credentials")
+				.create()
+		);	
 	}
 	
 	public void run (String[] args)  throws Exception {

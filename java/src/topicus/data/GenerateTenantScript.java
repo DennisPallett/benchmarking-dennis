@@ -116,7 +116,7 @@ public class GenerateTenantScript extends ConsoleScript {
 					randFloat = randomGenerator.nextInt(500) / 100;
 				}
 				
-				if (lineCounter % 2000000 == 0) {
+				if (lineCounter % 1000000 == 0) {
 					printLine("Writing lines");
 					FileUtils.writeStringToFile(newFile, stringBuffer.toString(), true);
 					stringBuffer = new StringBuilder((int)file.length()/3);

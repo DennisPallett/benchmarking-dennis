@@ -33,7 +33,16 @@ public class RunConsoleScript {
 				.hasArg(true)
 				.withDescription("Autostart this script without confirmation")
 				.create("start")
-		);		
+		);	
+		
+		options.addOption(
+				OptionBuilder
+				.hasArg()
+				.isRequired(false)
+				.withDescription("Specify the file where to write the execution log to")
+				.withLongOpt("log-file")
+				.create()
+		);
 		
 		options.addOption(
 				OptionBuilder

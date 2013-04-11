@@ -53,6 +53,12 @@ public class BenchmarksScript extends DatabaseScript {
 	public class InvalidNumberOfTenantsException extends Exception {}
 	public class InvalidNumberOfUsersException extends Exception {}
 	
+	public class MissingResultsFileException extends Exception {
+		public MissingResultsFileException(String string) {
+			super(string);
+		}
+	}
+	
 	protected static final int TOO_SLOW = 5000;
 	
 	protected List<String[]> queryList;
@@ -83,8 +89,10 @@ public class BenchmarksScript extends DatabaseScript {
 		super(type, database);
 	}
 				
-	public void run() throws Exception {
-		printLine("Started-up benchmark tool");		
+	public void run() throws Exception {		
+		printLine("Started-up benchmark tool");
+		
+		this.setupLogging(cliArgs.getOptionValue("log-file"));
 						
 		String queriesFile = cliArgs.getOptionValue("queries");		
 		this.loadQueries(queriesFile);
@@ -103,16 +111,6 @@ public class BenchmarksScript extends DatabaseScript {
 		
 		// how many tenants
 		this.numberOfTenants = Integer.parseInt(cliArgs.getOptionValue("tenants", "1"));
-			
-		// output directory
-		this.outputDirectory = cliArgs.getOptionValue("output");
-		File outputDir = new File(this.outputDirectory, "");
-		if (outputDir.exists() == false || outputDir.isFile()) {
-			throw new Exception("Invalid output directory specified");		
-		}
-		this.outputDirectory = outputDir.getAbsolutePath() + "/";
-		
-		printLine("Writing results and log to: " + this.outputDirectory);
 				
 		// load database config
 		this._loadDbConfig();
@@ -136,19 +134,11 @@ public class BenchmarksScript extends DatabaseScript {
 			throw new InvalidNumberOfNodesException();
 		}	
 		
-		// create output file name and log file name
-		this.outputFile = this.outputDirectory + "benchmark-";
-		this.outputFile+= this.type + "-";
-		this.outputFile+= this.numberOfUsers + "-users-";
-		this.outputFile+= this.nodes + "-nodes-";
-		this.outputFile+= this.tenantCount + "-tenants-";
-		this.outputFile+= this.iterations + "-iterations";		
-		
-		this.logFile = this.outputFile + ".log";
-		this.outputFile += ".csv";		
-		
-		BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
-		
+		this.outputFile = cliArgs.getOptionValue("results-file", "");
+		if (this.outputFile.length() == 0) {
+			throw new MissingResultsFileException("You must specify a results filename with --results-file");
+		}
+			
 		File currOutputFile = new File(this.outputFile);
 		if (currOutputFile.exists()) {
 			printError("Results file already exists");
@@ -164,7 +154,6 @@ public class BenchmarksScript extends DatabaseScript {
 		}
 		
 		this.resOut = new CSVWriter(new FileWriter(this.outputFile, true), '\t', CSVWriter.NO_QUOTE_CHARACTER);
-		this.setupLogging(this.logFile);	
 		
 		// setup benchmark users
 		this._setupUsers();

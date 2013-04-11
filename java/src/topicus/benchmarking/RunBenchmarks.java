@@ -74,6 +74,15 @@ public class RunBenchmarks extends RunDatabaseScript {
 				.withLongOpt("overwrite-existing")
 				.create()
 		);
+		
+		options.addOption(
+				OptionBuilder
+				.hasArg(true)
+				.isRequired(true)
+				.withDescription("Specify the file where to save results to")
+				.withLongOpt("results-file")
+				.create()
+		);
 	}
 	
 	public void run (String[] args)  throws Exception {

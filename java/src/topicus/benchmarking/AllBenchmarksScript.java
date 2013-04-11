@@ -6,6 +6,12 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.ArrayList;
 
+import com.amazonaws.auth.PropertiesCredentials;
+import com.amazonaws.regions.Region;
+import com.amazonaws.regions.Regions;
+import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.AmazonS3Client;
+
 import topicus.ConsoleScript;
 import topicus.DatabaseScript;
 import topicus.ExitCodes;
@@ -18,13 +24,31 @@ public class AllBenchmarksScript extends DatabaseScript {
 	public class CancelledException extends Exception {};	
 	public class InvalidQueriesFileException extends Exception {};
 	
+	public class MissingAwsCredentialsException extends Exception {
+		public MissingAwsCredentialsException(String string) {
+			super(string);
+		}
+	}	
+	public class InvalidBucketException extends Exception {
+		public InvalidBucketException(String string) {
+			super(string);
+		}
+	}	
+	
 	protected int nodes;
 	protected int nodeCount;
+	
+	protected int iterations;
 	
 	protected Connection conn;
 	
 	protected String outputDirectory;
 	protected String tenantDirectory;
+	
+	protected String bucketName;
+	protected String awsCredentialsFile;
+	
+	protected AmazonS3 s3;
 	
 	protected String queriesFile;		
 	
@@ -39,6 +63,8 @@ public class AllBenchmarksScript extends DatabaseScript {
 
 	public void run () throws Exception {
 		printLine("Started-up benchmark tool for a complete set of benchmarks");	
+		
+		
 		
 		this._setOptions();
 		
@@ -68,6 +94,10 @@ public class AllBenchmarksScript extends DatabaseScript {
 		// how many nodes
 		this.nodes = Integer.parseInt(cliArgs.getOptionValue("nodes", "1"));
 		printLine("Number of nodes set to: " + this.nodes);
+		
+		// how often should the queries be run
+		this.iterations = Integer.parseInt(cliArgs.getOptionValue("iterations", "5"));
+		printLine("Number of iterations set to: " + this.iterations);
 		
 		this.queriesFile = cliArgs.getOptionValue("queries");
 		File testFile = new File(this.queriesFile);
@@ -107,6 +137,34 @@ public class AllBenchmarksScript extends DatabaseScript {
 			&& this.tenantDirectory.endsWith("\\") == false) {
 				this.tenantDirectory += "/";
 		}
+		
+		this.bucketName = cliArgs.getOptionValue("bucket", "");
+		if (this.bucketName.length() == 0) {
+			this.printLine("No S3 bucket specified");
+			if (confirmBoolean("Are you sure you don't want to specify a S3 bucket to upload results to? (y/n)") == false) {
+				this.printError("Stopping, please restart with S3 bucket specification (--bucket [name])");
+				throw new Exception();
+			}
+		}
+		
+		// check for AWS credentials
+		if (this.bucketName.length() > 0) {
+			this.awsCredentialsFile = cliArgs.getOptionValue("aws-credentials", "");
+			printLine(this.awsCredentialsFile);
+			File awsFile = new File(this.awsCredentialsFile);
+			if (awsFile.exists() == false) {
+				throw new MissingAwsCredentialsException("Missing AWS credentials file");
+			}
+			
+			// setup S3 client
+			s3 = new AmazonS3Client(new PropertiesCredentials(awsFile));
+			s3.setRegion(Region.getRegion(Regions.EU_WEST_1));
+						
+			// check if bucket exists
+			if (!s3.doesBucketExist(this.bucketName)) {
+				throw new InvalidBucketException("Specified S3 bucket `" + this.bucketName + "` does not exist");
+			}
+		}
 	}
 	
 	protected void _deployTenants(int numberOfTenants) throws Exception {
@@ -133,6 +191,12 @@ public class AllBenchmarksScript extends DatabaseScript {
 			throw new CancelledException();
 		}
 		
+		String fileName = "benchmark";
+		fileName += "-" + this.type;
+		fileName += "-" + numberOfUsers + "-users";
+		fileName += "-" + this.nodes + "-nodes";
+		fileName += "-" + numberOfTenants + "-tenants";
+		
 		ArrayList<String> args = new ArrayList<String>();
 		
 		args.add("--type");
@@ -140,6 +204,9 @@ public class AllBenchmarksScript extends DatabaseScript {
 		
 		args.add("--queries");
 		args.add(this.queriesFile);
+		
+		args.add("--iterations");
+		args.add(String.valueOf(this.iterations));
 		
 		args.add("--nodes");
 		args.add(String.valueOf(this.nodes));
@@ -149,9 +216,12 @@ public class AllBenchmarksScript extends DatabaseScript {
 		
 		args.add("--users");
 		args.add(String.valueOf(numberOfUsers));
-				
-		args.add("--output");
-		args.add(this.outputDirectory);
+		
+		args.add("--results-file");
+		args.add(this.outputDirectory + fileName + ".csv");
+		
+		args.add("--log-file");
+		args.add(this.outputDirectory + fileName + ".log");
 		
 		if (doOverwrite) {
 			args.add("--overwrite-existing");
@@ -164,6 +234,12 @@ public class AllBenchmarksScript extends DatabaseScript {
 		
 		try {
 			RunBenchmarks.main( args.toArray(new String[args.size()]) );
+			
+			// upload results to S3
+			printLine("Uploading results to S3");
+			s3.putObject(this.bucketName, fileName, new File(this.outputDirectory + fileName + ".csv"));
+			printLine("Upload finished");
+			
 			
 		// can't overwrite existing results file
 		// likely means we already ran this benchmark
@@ -215,6 +291,11 @@ public class AllBenchmarksScript extends DatabaseScript {
 			return;
 		}
 		
+		String fileName = "load";
+		fileName += "-" + this.type;
+		fileName += "-" + this.nodes + "-nodes";
+		fileName += "-tenant-" + tenantId;
+				
 		ArrayList<String> args = new ArrayList<String>();
 		args.add("--type"); 
 		args.add(this.type);
@@ -225,8 +306,11 @@ public class AllBenchmarksScript extends DatabaseScript {
 		args.add("--tenant-id"); 
 		args.add(String.valueOf(tenantId));
 		
-		args.add("--output");
-		args.add(this.outputDirectory);
+		args.add("--results-file");
+		args.add(this.outputDirectory + fileName + ".csv");
+		
+		args.add("--log-file");
+		args.add(this.outputDirectory + fileName + ".log");
 		
 		if (!doOverwrite) {
 			args.add("--stop-on-overwrite");
@@ -240,6 +324,11 @@ public class AllBenchmarksScript extends DatabaseScript {
 		
 		try {
 			RunLoadTenant.main( args.toArray(new String[args.size()]) );
+			
+			// upload results to S3
+			printLine("Uploading results to S3");
+			s3.putObject(this.bucketName, fileName, new File(this.outputDirectory + fileName + ".csv"));
+			printLine("Upload finished");
 		} catch (LoadTenantScript.OverwriteException e) {
 			// no problemo!
 		} catch (AlreadyDeployedException e) {
