@@ -68,12 +68,9 @@ public class GenerateTenantScript extends ConsoleScript {
 		int rowCount = lines.size();
 		this.rowCounts.put(fileName,  rowCount);
 		
-		//String newFile = "";
 		StringBuilder newFile = new StringBuilder((int)file.length());
 		for (String line : lines) {
 			StringBuilder newLine = new StringBuilder(line.trim());
-			//String newLine = line;
-			//newLine = newLine.trim();
 			
 			// replace all keys with tenant-specific keys
 			int pkPos;
@@ -100,13 +97,11 @@ public class GenerateTenantScript extends ConsoleScript {
 				newLine.replace(pkPos, endPos, newPk);
 			}
 			
-			/* TODO:
-			if ($file == 'closure_org_data.tbl') {
-				$newLine = $this->_replaceFK($newLine, 'PK_ORG:', $this->rowCounts['org_data.tbl']);
-				$newLine = $this->_replaceFK($newLine, 'PK_ORG:', $this->rowCounts['org_data.tbl']);
+			if (fileName.equals("closure_org_data.tbl")) {
+				this._replaceFK(newLine, "PK_ORG:", this.rowCounts.get("org_data.tbl"));
+				this._replaceFK(newLine, "PK_ORG:", this.rowCounts.get("org_data.tbl"));
 			}
-			*/
-
+			
 			// add new line
 			newLine.append("\n");
 
@@ -122,6 +117,29 @@ public class GenerateTenantScript extends ConsoleScript {
 		FileUtils.writeStringToFile(new File(this.tenantDirectory + fileName), newContent);
 		
 		printLine("Written `" + fileName + "` to tenant directory");		
+	}
+	
+	protected void _replaceFK(StringBuilder line, String keyName, int rowCount) {
+		int startPos = line.indexOf(keyName);
+		int endPos = line.indexOf("#", startPos);
+		if (endPos < startPos) {
+			endPos = line.length();
+		}
+		
+		String value = line.substring(startPos+keyName.length(), endPos);
+			
+		String newValue = "";
+		if (value.toLowerCase().equals("null") && keyName.equals("PK_ORG:")) {
+			newValue = "0";
+		} else if (value.equals("0") && keyName.equals("PK_ORG:")) {
+			newValue = String.valueOf(this.tenantId);
+		} else if (value.toLowerCase().equals("null") == false) {
+			newValue = String.valueOf( ((this.tenantId-1) * rowCount) + Integer.parseInt(value));
+		} else {
+			newValue = value;
+		}
+		
+		line.replace(startPos,  endPos,  newValue);
 	}
 	
 	protected void _checkTenantExists() throws Exception {
