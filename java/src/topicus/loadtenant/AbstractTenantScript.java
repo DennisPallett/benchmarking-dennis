@@ -7,6 +7,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.TreeMap;
@@ -50,13 +51,29 @@ public abstract class AbstractTenantScript extends DatabaseScript {
 			this.manageTenant.deleteDataFromClosure(beginPk, endPk);
 		} else {
 			String tenantField = "";
-			
+						
 			if (tableName.equals("dim_administratie")) tenantField = "a_tenant";
 			if (tableName.equals("dim_grootboek")) tenantField = "gb_tenant";
 			if (tableName.equals("dim_kostenplaats")) tenantField = "kp_tenant";
 			if (tableName.equals("organisatie")) tenantField = "afnemer";
 			if (tableName.equals("fact_exploitatie")) tenantField = "tenant_key";
 			
+			// check if table even has data
+			try {
+				PreparedStatement q = conn.prepareStatement("SELECT " + tenantField + " FROM "
+										+ tableName + " WHERE " + tenantField + " = ? LIMIT 1");
+				q.setInt(1,  tenantId);
+				q.execute();
+				ResultSet result = q.getResultSet();
+				
+				if (result.next() == false) {
+					this.printLine("Table has no old tenant data");
+					return;
+				}
+			} catch (SQLException e) {
+				// don't care
+			}
+						
 			this.manageTenant.deleteDataFromTable(tableName, tenantField, this.tenantId);
 		}		
 		

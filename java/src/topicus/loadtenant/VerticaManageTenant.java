@@ -1,6 +1,7 @@
 package topicus.loadtenant;
 
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 
@@ -9,6 +10,7 @@ public class VerticaManageTenant extends AbstractManageTenant {
 	@Override
 	public void deleteDataFromTable(String tableName, String tenantField, int tenantId)
 			throws SQLException {
+				
 		PreparedStatement q = this.conn.prepareStatement("DELETE /*+ direct */ FROM " + tableName + " WHERE " + tenantField + " = ?");
 		q.setInt(1,  tenantId);
 		
