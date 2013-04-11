@@ -24,6 +24,7 @@ public class RunGenerateTenant extends RunConsoleScript {
 		options.addOption(
 				OptionBuilder
 				.hasArg()
+				.isRequired()
 				.withType(Number.class)
 				.withDescription("Specify the ID of the new tenant")
 				.withLongOpt("id")
