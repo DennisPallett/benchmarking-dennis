@@ -57,6 +57,7 @@
 		<create-executables file="run-all-benchmarks" mainClass="topicus.benchmarking.RunAllBenchmarks" />
 		<create-executables file="load-tenant" mainClass="topicus.loadtenant.RunLoadTenant" />
 		<create-executables file="unload-tenant" mainClass="topicus.loadtenant.RunUnloadTenant" />
+		<create-executables file="generate-tenant" mainClass="topicus.data.RunGenerateTenant" />
 	</target>
 			
     <target name="build-subprojects"/>

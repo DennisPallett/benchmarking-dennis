@@ -7,9 +7,9 @@ import org.apache.commons.cli.OptionBuilder;
 import topicus.RunConsoleScript;
 import topicus.RunDatabaseScript;
 
-public class RunGenerateTenantScript extends RunConsoleScript {
+public class RunGenerateTenant extends RunConsoleScript {
 	
-	public RunGenerateTenantScript () {
+	public RunGenerateTenant () {
 		super();
 		
 		options.addOption(
@@ -44,7 +44,7 @@ public class RunGenerateTenantScript extends RunConsoleScript {
 	 * @param args
 	 */
 	public static void main(String[] args) {
-		RunGenerateTenantScript runner = new RunGenerateTenantScript();
+		RunGenerateTenant runner = new RunGenerateTenant();
 		
 		try {
 			runner.run(args);
