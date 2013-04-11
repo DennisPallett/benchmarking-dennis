@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Random;
 import java.util.Scanner;
 
 import org.apache.commons.io.FileUtils;
@@ -21,11 +22,13 @@ public class GenerateTenantScript extends ConsoleScript {
 	protected String dataDirectory;
 	protected String tenantDirectory;
 	
+	protected Random randomGenerator;
+	
 	protected HashMap<String, Integer> rowCounts = new HashMap<String, Integer>();
 	
 	public void run () throws Exception {
 		printLine("Started-up tenant generator tool");	
-		
+				
 		this._setOptions();
 		
 		if (!this.cliArgs.hasOption("start")) {
@@ -43,7 +46,95 @@ public class GenerateTenantScript extends ConsoleScript {
 		this._createTenantFile("gb_data.tbl");
 		this._createTenantFile("kp_data.tbl");
 		
+		this._createTenantFactFile();
+		
 		this.printLine("Successfully finished!");
+	}
+	
+	protected void _createTenantFactFile () throws Exception {
+		printLine("Generating fact file");
+		
+		File file = new File(this.dataDirectory + "fe_data.tbl");
+		if (!file.exists()) {
+			printError("Missing data file `fe_data.tbl` in data directory!");
+			throw new Exception();
+		}
+		
+		// load data in memory
+		this.printLine("Loading fact file into memory");
+		String[] lines = new String[3740431];
+		Scanner scan = new Scanner(file).useDelimiter("\n");
+		int i = 0;
+		while(scan.hasNext()) {
+			lines[i] = scan.next();
+			i++;
+		}
+		
+		int rowCount = lines.length;
+		
+		printLine("File in memory, found " + rowCount + " rows");
+				
+		int primaryKey = ((this.tenantId-1) * rowCount * 4) + 1;
+		int lineCounter = 1;
+		
+		File newFile = new File(this.tenantDirectory + "fe_data.tbl");
+		double randFloat = randomGenerator.nextInt(500) / 100;
+		StringBuilder stringBuffer = new StringBuilder((int)file.length()/3);
+		for(int j=0; j < 4; j++) {
+			for (String line : lines) {
+				StringBuilder newLine = new StringBuilder();
+				
+				newLine.append(primaryKey);
+				newLine.append("#");
+				newLine.append(tenantId);
+				newLine.append("#");
+				newLine.append(line.trim());
+				newLine.append("\n");		
+				
+				// replace FK's
+				this._replaceFK(newLine,  "PK_ORG:",  rowCounts.get("org_data.tbl"));
+				this._replaceFK(newLine,  "PK_ADMIN:",  rowCounts.get("adm_data.tbl"));
+				this._replaceFK(newLine,  "PK_KP:",  rowCounts.get("kp_data.tbl"));
+				this._replaceFK(newLine,  "PK_GB:",  rowCounts.get("gb_data.tbl"));
+				
+				int startPos = newLine.indexOf("VALUE:");
+				if (startPos > -1) {
+					int endPos = newLine.indexOf("#", startPos);
+					
+					// retrieve value and multiply by random multiplier
+					double value = Float.parseFloat(newLine.substring(startPos+("VALUE:").length(), endPos));
+					value = value * randFloat;
+					
+					// insert new value into line
+					newLine.replace(startPos, endPos,  String.valueOf(value));
+				}
+				
+				stringBuffer.append(newLine);
+				
+				if (lineCounter % 100000 == 0) {
+					printLine("Processed " + lineCounter + " rows");
+					randFloat = randomGenerator.nextInt(500) / 100;
+				}
+				
+				if (lineCounter % 2000000 == 0) {
+					printLine("Writing lines");
+					FileUtils.writeStringToFile(newFile, stringBuffer.toString(), true);
+					stringBuffer = new StringBuilder((int)file.length()/3);
+				}
+				
+				lineCounter++;
+				primaryKey++;
+			}
+			
+			
+		}
+		
+		FileUtils.writeStringToFile(newFile, stringBuffer.toString(), true);
+		printLine("Processed " + lineCounter + " rows");
+		
+		lines = null;
+		stringBuffer = null;
+		printLine("Finished fact file!");
 	}
 	
 	protected void _createTenantFile(String fileName) throws Exception {
@@ -187,6 +278,8 @@ public class GenerateTenantScript extends ConsoleScript {
 		}
 		
 		this.tenantDirectory = this.outputDirectory + this.tenantId + "/";
+		
+		this.randomGenerator = new Random(this.tenantId);
 	}
 	
 }
