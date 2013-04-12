@@ -148,8 +148,8 @@ public class AllBenchmarksScript extends DatabaseScript {
 		
 		// check for AWS credentials
 		if (this.bucketName.length() > 0) {
-			this.awsCredentialsFile = cliArgs.getOptionValue("aws-credentials", "");
-			printLine(this.awsCredentialsFile);
+			this.awsCredentialsFile = cliArgs.getOptionValue("aws-credentials", System.getProperty("user.home") + "/AwsCredentials.properties");
+			printLine("Using AWS credentials: " + this.awsCredentialsFile);
 			File awsFile = new File(this.awsCredentialsFile);
 			if (awsFile.exists() == false) {
 				throw new MissingAwsCredentialsException("Missing AWS credentials file");
