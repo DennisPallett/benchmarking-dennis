@@ -6,6 +6,7 @@ import java.io.InputStreamReader;
 import org.apache.commons.cli.BasicParser;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
+import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.OptionBuilder;
 import org.apache.commons.cli.Options;
 
@@ -27,6 +28,13 @@ public class RunConsoleScript {
 		this.cliParser = new BasicParser();
 			
 		this.options = new Options();
+		
+		options.addOption(
+				OptionBuilder
+				.hasArg(false)
+				.withDescription("Shows this help message")
+				.create("help")
+		);
 		
 		options.addOption(
 				OptionBuilder
@@ -56,6 +64,12 @@ public class RunConsoleScript {
 	
 	public void run (String[] args)  throws Exception {
 		this.cliArgs = this.cliParser.parse(this.options, args);
+		
+		if (this.cliArgs.hasOption("help")) {
+			HelpFormatter formatter = new HelpFormatter();
+			formatter.printHelp("test", this.options);
+			System.exit(0);
+		}
 	}
 
 }

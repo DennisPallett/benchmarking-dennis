@@ -195,6 +195,7 @@ public class AllBenchmarksScript extends DatabaseScript {
 		fileName += "-" + this.nodes + "-nodes";
 		fileName += "-" + numberOfTenants + "-tenants";
 		fileName += "-" + numberOfUsers + "-users";		
+		fileName += "-" + this.iterations + "-iterations";
 		
 		ArrayList<String> args = new ArrayList<String>();
 		

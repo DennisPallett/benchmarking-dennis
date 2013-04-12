@@ -48,7 +48,7 @@ public class VerticaDatabase extends AbstractDatabase {
 			throws SQLException {
 		Statement q = conn.createStatement();
 		int rows = q.executeUpdate("copy " + tableName + " from '" + fileName + "' delimiter '#'" +
-				" null as 'NULL' abort on error direct;");
+				" null as 'NULL' abort on error DIRECT;");
 		return rows;
 	}
 	
