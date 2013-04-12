@@ -192,9 +192,9 @@ public class AllBenchmarksScript extends DatabaseScript {
 		
 		String fileName = "benchmark";
 		fileName += "-" + this.type;
-		fileName += "-" + numberOfUsers + "-users";
 		fileName += "-" + this.nodes + "-nodes";
 		fileName += "-" + numberOfTenants + "-tenants";
+		fileName += "-" + numberOfUsers + "-users";		
 		
 		ArrayList<String> args = new ArrayList<String>();
 		

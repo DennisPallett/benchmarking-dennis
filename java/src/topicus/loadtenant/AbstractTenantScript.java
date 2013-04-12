@@ -48,6 +48,24 @@ public abstract class AbstractTenantScript extends DatabaseScript {
 			int beginPk = (this.tenantId - 1) * ORG_ROW_COUNT + ORG_BEGIN_PK;
 			int endPk = beginPk + ORG_ROW_COUNT;
 			
+			// check if table even has data
+			try {
+				PreparedStatement q = conn.prepareStatement("SELECT organisatie_key FROM closure_organisatie" +
+						" WHERE organisatie_key >= ? AND organisatie_key <= ? LIMIT 1");
+				
+				q.setInt(1, beginPk);
+				q.setInt(2, endPk);
+				q.execute();
+				ResultSet result = q.getResultSet();
+				
+				if (result.next() == false) {
+					this.printLine("Table has no old tenant data");
+					return;
+				}
+			} catch (SQLException e) {
+				// don't care
+			}
+			
 			this.manageTenant.deleteDataFromClosure(beginPk, endPk);
 		} else {
 			String tenantField = "";
