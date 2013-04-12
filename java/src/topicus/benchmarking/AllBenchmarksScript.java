@@ -124,6 +124,7 @@ public class AllBenchmarksScript extends DatabaseScript {
 			throw new Exception("Invalid output directory specified");		
 		}
 		this.outputDirectory = outputDir.getAbsolutePath() + "/";
+		printLine("Output directory set to: " + this.outputDirectory);
 		
 		this.tenantDirectory = this.cliArgs.getOptionValue("tenant-data", "");
 		if (this.tenantDirectory.length() == 0) {
@@ -230,14 +231,11 @@ public class AllBenchmarksScript extends DatabaseScript {
 		args.add("--start"); 
 		args.add("y");
 		
+		boolean finished = false;
+		
 		try {
 			RunBenchmarks.main( args.toArray(new String[args.size()]) );
-			
-			// upload results to S3
-			printLine("Uploading results to S3");
-			s3.putObject(this.bucketName, fileName, new File(this.outputDirectory + fileName + ".csv"));
-			printLine("Upload finished");
-			
+			finished = true;			
 			
 		// can't overwrite existing results file
 		// likely means we already ran this benchmark
@@ -262,7 +260,11 @@ public class AllBenchmarksScript extends DatabaseScript {
 			} else {
 				printError("Stopping");
 				throw new CancelledException();
-			}		
+			}	
+			
+		} catch (BenchmarksScript.TooSlowException e) {
+			printError("Benchmark did not complete: query execution time too slow");
+			finished = true;
 			
 		// some other exception?
 		} catch (Exception e) {
@@ -275,7 +277,14 @@ public class AllBenchmarksScript extends DatabaseScript {
 			}
 		}
 		
-		printLine("Benchmark finished");
+		if (finished) {
+			// upload results to S3
+			printLine("Uploading results to S3");
+			s3.putObject(this.bucketName, fileName, new File(this.outputDirectory + fileName + ".csv"));
+			printLine("Upload finished");
+			
+			printLine("Benchmark finished");
+		}
 	}
 	
 	protected void _deployTenant(int tenantId) throws Exception {

@@ -83,7 +83,7 @@ public class BenchmarksScript extends DatabaseScript {
 	
 	protected List<int[]> results = new ArrayList<int[]>();
 	
-	protected int slowCount = 0;
+	protected boolean slowStop = false;
 	
 	public BenchmarksScript(String type, AbstractDatabase database) {
 		super(type, database);
@@ -153,6 +153,8 @@ public class BenchmarksScript extends DatabaseScript {
 			currOutputFile.createNewFile();
 		}
 		
+		printLine("Writing results to: " + this.outputFile);
+		
 		this.resOut = new CSVWriter(new FileWriter(this.outputFile, true), '\t', CSVWriter.NO_QUOTE_CHARACTER);
 		
 		// setup benchmark users
@@ -175,6 +177,10 @@ public class BenchmarksScript extends DatabaseScript {
 		if (this.logOut != null) {
 			this.logOut.close();
 		}
+		
+		if (this.slowStop) {
+			throw new TooSlowException("Query execution time too slow!");
+		}		
 	}
 	
 	public void addResult(int userId, int iteration, int set, int query1_time, int query2_time, int query3_time, int query4_time, int set_time) {
@@ -210,29 +216,35 @@ public class BenchmarksScript extends DatabaseScript {
 			set_time				
 		});
 		
-		// too slow trip wire
-		if (query1_time >= TOO_SLOW) this.slowCount++;
-		if (query2_time >= TOO_SLOW) this.slowCount++;
-		if (query3_time >= TOO_SLOW) this.slowCount++;
-		if (query4_time >= TOO_SLOW) this.slowCount++;
-		
-		// check number of slow queries	
-		if (this.slowCount >= ((this.results.size()*4) * 0.1) 				// bigger than 10% of totally executed queries
-			&& this.slowCount >= (this.queryList.size()*this.numberOfUsers)	// bigger than at least 10 queries of each user
-			) {
-				this.printError("Too many slow queries detected!");
-				this.printLine("Stopping");
-				System.exit(ExitCodes.TOO_SLOW);
-		}
-		
-		
+		if (this.results.size() >= 5) {
+			this._checkForSlow();
+		}	
 		
 		if ( (this.results.size() % (20 * this.numberOfUsers)) == 0) {
 			this.printSummary();
 		}
 	}
 	
-	public void printSummary () {
+	protected void _checkForSlow () {
+		HashMap<String, Float> stats = this.calculateStats();
+		
+		if (stats.get("queryAvg") > TOO_SLOW) {
+			this.printError("Queries are too slow, current average: " + stats.get("queryAvg"));
+			this.slowStop();
+		}
+	}
+	
+	protected synchronized void slowStop () {
+		this.slowStop = true;
+		
+		for (BenchmarkUser user : this.users) {
+			user.interrupt();
+		}
+	}
+	
+	public HashMap<String, Float> calculateStats () {
+		HashMap<String, Float> stats = new HashMap<String, Float>();
+		
 		// calculate query average
 		int queryMax = Integer.MIN_VALUE;
 		int queryMin = Integer.MAX_VALUE;
@@ -270,24 +282,36 @@ public class BenchmarksScript extends DatabaseScript {
 		float queryAvg = queryTotal / queryCount;
 		float setAvg = setTotal / setCount;
 		
+		stats.put("queryCount",  Float.valueOf(queryCount));
+		stats.put("queryMax", Float.valueOf(queryMax));
+		stats.put("queryAvg", Float.valueOf(queryAvg));
+		stats.put("queryMin", Float.valueOf(queryMin));
+		
+		stats.put("setCount",  Float.valueOf(setCount));
+		stats.put("setMax", Float.valueOf(setMax));
+		stats.put("setAvg", Float.valueOf(setAvg));
+		stats.put("setMin", Float.valueOf(setMin));
+		
+		return stats;
+	}
+	
+	public void printSummary () {
+		HashMap<String, Float> stats = this.calculateStats();
+		
 		this.printLine("---");
 		this.printLine("Results summary:");
 		this.printLine("----------------");
-		this.printLine("Number of queries: " + queryCount);
-		this.printLine("Min query time: " + queryMin + " ms");
-		this.printLine("Avg query time: " + queryAvg + " ms");
-		this.printLine("Max query time: " + queryMax + " ms");
+		this.printLine("Number of queries: " + stats.get("queryCount"));
+		this.printLine("Min query time: " + stats.get("queryMin") + " ms");
+		this.printLine("Avg query time: " + stats.get("queryAvg") + " ms");
+		this.printLine("Max query time: " + stats.get("queryMax") + " ms");
 		this.printLine("----------------");
-		this.printLine("Number of sets: " + setCount);
-		this.printLine("Min set time: " + setMin + " ms");
-		this.printLine("Avg set time: " + setAvg + " ms");
-		this.printLine("Max set time: " + setMax + " ms");
+		this.printLine("Number of sets: " + stats.get("setCount"));
+		this.printLine("Min set time: " + stats.get("setMin") + " ms");
+		this.printLine("Avg set time: " + stats.get("setAvg") + " ms");
+		this.printLine("Max set time: " + stats.get("setMax") + " ms");
 		this.printLine("----------------");	
-		this.printLine("Slow count: " + slowCount);
-		this.printLine("----------------");	
-	}
-	
-	
+	}	
 	
 	protected void runBenchmarks () throws InterruptedException {
 		this.printLine("Running benchmarks");
@@ -351,6 +375,8 @@ public class BenchmarksScript extends DatabaseScript {
 				this.nodes
 			);
 			
+			user.setUncaughtExceptionHandler(null);
+			
 			user.start();
 			this.users.add(user);
 		}
@@ -403,6 +429,10 @@ public class BenchmarksScript extends DatabaseScript {
 	}
 		
 	
-
+	public class TooSlowException extends Exception {
+		public TooSlowException(String string) {
+			super(string);
+		}
+	}
 
 }
