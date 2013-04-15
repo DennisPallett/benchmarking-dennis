@@ -14,15 +14,24 @@ apt-get install unzip -y
 apt-get install ant -y
 
 # create benchmarking structure
-mkdir -p /benchmarking/tools
+mkdir -p /benchmarking/
 
-cd /benchmarking/tools
+cd /benchmarking/
 
 # download tools and unzip
 wget -qO- -O tmp.zip https://github.com/topicus-ini/benchmarking-dennis/archive/master.zip && unzip tmp.zip && rm tmp.zip
 mv benchmarking-dennis-master/* .
 rm -rf benchmarking-dennis-master/
 
+ln -s java/build tools
 
+# build tools and make executable
+cd java
+ant build create-scripts
+chmod -R +x build
+
+# add scripts to PATH
+echo "export PATH=$PATH:/benchmarking/tools:/benchmarking/tools/manage-cluster" >> ~/.profile
+source ~/.profile
 
 printf "\n\nAll OK! Instance is fully setup!\n\n"

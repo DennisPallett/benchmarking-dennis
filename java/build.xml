@@ -13,7 +13,10 @@
 		<sequential>
 			<echo message="Executable: @{file}"/>
 			<echo file="build/@{file}.bat">java -cp scripts.jar @{mainClass} %*</echo>
-			<echo file="build/@{file}">java -cp scripts.jar @{mainClass} "$@"</echo>
+			<echo file="build/@{file}">
+				DIR="$( cd "$( dirname "$0" )" &amp;&amp; pwd )"
+				java -cp "$DIR/scripts.jar" @{mainClass} "$@"
+			</echo>
 		</sequential>
 	</macrodef>
 	
@@ -23,7 +26,10 @@
 		<sequential>
 			<echo message="Manage Cluster Executable: @{action}"/>
 			<echo file="build/manage-cluster/@{action}.bat">java -cp ../scripts.jar topicus.cluster.RunManageCluster --action @{action} %*</echo>
-			<echo file="build/manage-cluster/@{action}">java -cp ../scripts.jar topicus.cluster.RunManageCluster --action @{action} "$@"</echo>
+			<echo file="build/manage-cluster/@{action}">
+				DIR="$( cd "$( dirname "$0" )" &amp;&amp; pwd )"
+				java -cp "$DIR/../scripts.jar" topicus.cluster.RunManageCluster --action @{action} "$@"
+			</echo>
 		</sequential>
 	</macrodef>
 	
