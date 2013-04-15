@@ -207,7 +207,7 @@ public class ManageClusterScript extends ConsoleScript {
 			}
 		}
 		
-		manageCluster.updateHostsFile(this.cliArgs.hasOption("use-public-ip"));
+		manageCluster.updateHostsFile(this.cliArgs.hasOption("use-private-ip") == false);
 		
 		printLine("The hosts file has been updated");
 	}

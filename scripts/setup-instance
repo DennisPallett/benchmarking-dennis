@@ -1,0 +1,20 @@
+#!/bin/bash
+set -x
+
+# make sure APT-GET is up-to-date
+apt-get update && apt-get upgrade -y
+
+# install Java
+apt-get install openjdk-6-jre-headless -y
+
+# install unzip
+apt-get install unzip -y
+
+# install ant
+apt-get install ant -y
+
+# create benchmarking structure
+mkdir -p /benchmarking/tools
+
+
+printf "\n\nAll OK! Instance is fully setup!\n\n"
