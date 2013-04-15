@@ -17,6 +17,17 @@
 		</sequential>
 	</macrodef>
 	
+	<macrodef name="create-manage-cluster-executables">
+		<attribute name="file" />
+		<attribute name="action" />
+			
+		<sequential>
+			<echo message="Manage Cluster Executable: @{file}"/>
+			<echo file="build/manage-cluster/@{file}.bat">java -cp ../scripts.jar topicus.cluster.RunManageCluster --action @{action} %*</echo>
+			<echo file="build/manage-cluster/@{file}">java -cp ../scripts.jar topicus.cluster.RunManageCluster --action @{action} "$@"</echo>
+		</sequential>
+	</macrodef>
+	
     <path id="DWHBenchmarking.classpath">
         <pathelement location="bin"/>
         <pathelement location="lib/opencsv-2.3.jar"/>
@@ -52,12 +63,18 @@
 		</jar>
 	</target>
 	
-	<target name="create-scripts" depends="create-jar">
+	<target name="create-manage-cluster-scripts" depends="create-jar">
+		<mkdir dir="build/manage-cluster"/>
+		<create-manage-cluster-executables file="status" action="status" />
+	</target>
+	
+	<target name="create-scripts" depends="create-jar,create-manage-cluster-scripts">
 		<create-executables file="run-benchmarks" mainClass="topicus.benchmarking.RunBenchmarks" />
 		<create-executables file="run-all-benchmarks" mainClass="topicus.benchmarking.RunAllBenchmarks" />
 		<create-executables file="load-tenant" mainClass="topicus.loadtenant.RunLoadTenant" />
 		<create-executables file="unload-tenant" mainClass="topicus.loadtenant.RunUnloadTenant" />
 		<create-executables file="load-schema" mainClass="topicus.loadschema.RunLoadSchema" />
+		<create-executables file="process-results" mainClass="topicus.results.RunProcessResults" />
 		
 		<echo message="Executable: generate-tenant" />
 		<echo file="build/generate-tenant.bat">java -Xmx4048M -cp scripts.jar topicus.data.RunGenerateTenant %*</echo>

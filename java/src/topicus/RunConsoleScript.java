@@ -67,7 +67,7 @@ public class RunConsoleScript {
 		
 		if (this.cliArgs.hasOption("help")) {
 			HelpFormatter formatter = new HelpFormatter();
-			formatter.printHelp("test", this.options);
+			formatter.printHelp(this.getClass().getName(), this.options);
 			System.exit(0);
 		}
 	}
