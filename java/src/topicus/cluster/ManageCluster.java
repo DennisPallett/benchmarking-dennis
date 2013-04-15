@@ -317,6 +317,38 @@ public class ManageCluster {
 			blockList.add(block);
 		}
 		
+		// add instance storage 1
+		if (instanceType.equals("m1.medium") || instanceType.equals("m1.large") || instanceType.equals("m1.xlarge")) {
+			BlockDeviceMapping block = new BlockDeviceMapping();
+			block.setDeviceName("/dev/sdb");
+			block.setVirtualName("ephemeral0");
+			
+			blockList.add(block);		
+		}
+		
+		// add instance storage 2
+		if (instanceType.equals("m1.large") || instanceType.equals("m1.xlarge")) {
+			BlockDeviceMapping block = new BlockDeviceMapping();
+			block.setDeviceName("/dev/sdc");
+			block.setVirtualName("ephemeral1");
+			
+			blockList.add(block);		
+		}
+		
+		// add instance storage 3 and 4
+		if (instanceType.equals("m1.xlarge")) {
+			BlockDeviceMapping block1 = new BlockDeviceMapping();
+			block1.setDeviceName("/dev/sdd");
+			block1.setVirtualName("ephemeral2");
+			
+			BlockDeviceMapping block2 = new BlockDeviceMapping();
+			block2.setDeviceName("/dev/sd3");
+			block2.setVirtualName("ephemerale");
+			
+			blockList.add(block1);		
+			blockList.add(block2);
+		}
+		
 		request.withBlockDeviceMappings(blockList);
 		
 		// launch instance
