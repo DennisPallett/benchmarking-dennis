@@ -55,9 +55,7 @@ public class ManageCluster {
 		this.setCredentials(awsFile);
 		this.testMode = testMode;
 		this.keyName = keyName;
-		
-		this.nodeInstances = new TreeMap<String, Instance>();
-		
+				
 		ec2Client = new AmazonEC2Client(this.credentials);
 		ec2Client.setRegion(Region.getRegion(Regions.EU_WEST_1));
 	}
@@ -103,14 +101,14 @@ public class ManageCluster {
 		this._launchInstance(instanceType, "node" + (getNodeCount()+1));
 	}
 	
-	public void stopNode(int nodeId) throws Exception {
+	public void stopNode(int nodeId) throws InvalidNodeIdException {
 		// don't do anything if node is not running
 		if (!isNodeRunning(nodeId)) return;
 		
 		Instance node = getNode(nodeId);
 		
 		if (node == null) {
-			throw new Exception("Instance node is null!");
+			throw new InvalidNodeIdException();
 		}
 		
 		TerminateInstancesRequest request = new TerminateInstancesRequest();
@@ -121,7 +119,7 @@ public class ManageCluster {
 		ec2Client.terminateInstances(request);		
 	}
 	
-	public void startServer(String instanceType) throws Exception {		
+	public void startServer(String instanceType) throws InvalidInstanceTypeException, ServerAlreadyRunningException, FailedLaunchException {		
 		// validate type
 		if (instanceType == null || instanceType.length() == 0) {
 			instanceType = this.getDefaultServerType();
@@ -139,7 +137,7 @@ public class ManageCluster {
 		this._launchInstance(instanceType, "server");
 	}
 	
-	public void stopServer() throws Exception {
+	public void stopServer() {
 		// don't do anything if server is not running
 		if (!isServerRunning()) return;
 
@@ -151,19 +149,23 @@ public class ManageCluster {
 		ec2Client.terminateInstances(request);		
 	}
 	
-	public void stopAll () throws Exception {
+	public void stopAll () {
 		this.stopServer();
 		
 		for(int i=1; i <= this.getNodeCount(); i++) {
-			this.stopNode(i);
+			try {
+				this.stopNode(i);
+			} catch (InvalidNodeIdException e) {
+				// don't care, ignoring
+			}
 		}		
 	}
 	
-	public void updateHostsFile () throws Exception {
+	public void updateHostsFile () throws IOException {
 		this.updateHostsFile(false);
 	}
 	
-	public void updateHostsFile (boolean usePublic) throws Exception {
+	public void updateHostsFile (boolean usePublic) throws IOException {
 		List<File> files = new ArrayList<File>();
 		files.add(new File("C:\\Windows\\system32\\drivers\\etc\\hosts"));
 		files.add(new File("/etc/hosts"));
@@ -197,6 +199,7 @@ public class ManageCluster {
 
 	protected String _replaceHostsEntry(String hosts, String hostName, String newIp) {
 		// remove existing entry
+		hosts = hosts.trim();
 		hosts = hosts.replaceAll("(.*)(\\s+)" + hostName, "");
 		hosts = hosts.trim();
 		
@@ -241,6 +244,9 @@ public class ManageCluster {
 	
 	public void updateClusterInfo (boolean refreshCache) {
 		if (infoCached && !refreshCache) return;
+		
+		this.serverInstance = null;
+		this.nodeInstances = new TreeMap<String, Instance>();
 		
 		// setup filters
 		ArrayList<Filter> filters = new ArrayList<Filter>();		
@@ -391,6 +397,10 @@ public class ManageCluster {
 		public ServerAlreadyRunningException(String string) {
 			super(string);
 		}
+	}
+	
+	public class InvalidNodeIdException extends Exception {
+		
 	}
 
 }

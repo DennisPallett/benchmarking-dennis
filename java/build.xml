@@ -71,6 +71,7 @@
 		<create-manage-cluster-executables action="stop-server" />
 		<create-manage-cluster-executables action="stop-all" />
 		<create-manage-cluster-executables action="update-hosts" />
+		<create-manage-cluster-executables action="run-gui" />
 	</target>
 	
 	<target name="create-scripts" depends="create-jar,create-manage-cluster-scripts">

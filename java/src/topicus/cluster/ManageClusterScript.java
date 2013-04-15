@@ -51,6 +51,8 @@ public class ManageClusterScript extends ConsoleScript {
 			this.printStatus();
 		} else if (action.equals("update-hosts")) {
 			this.updateHosts();
+		} else if (action.equals("run-gui")) {
+			this.runGUI();
 		} else {
 			throw new InvalidActionException("The specified action `" + action + "` is not a valid action");
 		}
@@ -208,6 +210,12 @@ public class ManageClusterScript extends ConsoleScript {
 		manageCluster.updateHostsFile(this.cliArgs.hasOption("use-public-ip"));
 		
 		printLine("The hosts file has been updated");
+	}
+	
+	protected void runGUI () {
+		printLine("Launching GUI");
+		new ManageClusterGUI(manageCluster).setVisible(true);
+		printLine("GUI running");
 	}
 	
 	protected void _setOptions () throws MissingAwsCredentialsException, InvalidCredentialsFileException {
