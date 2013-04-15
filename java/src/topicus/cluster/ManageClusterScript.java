@@ -41,8 +41,16 @@ public class ManageClusterScript extends ConsoleScript {
 			this.startNode();
 		} else if (action.equals("stop-node")) {
 			this.stopNode();
+		} else if (action.equals("start-server")) {
+			this.startServer();
+		} else if (action.equals("stop-server")) {
+			this.stopServer();
+		} else if (action.equals("stop-all")) {
+			this.stopAll();
 		} else if (action.equals("status")) {
 			this.printStatus();
+		} else if (action.equals("update-hosts")) {
+			this.updateHosts();
 		} else {
 			throw new InvalidActionException("The specified action `" + action + "` is not a valid action");
 		}
@@ -135,6 +143,73 @@ public class ManageClusterScript extends ConsoleScript {
 		printLine("Node has been launched and is starting up");
 	}
 	
+	protected void startServer() throws Exception {
+		this.printLine("Ready to start benchmark server");
+			
+		if (!this.cliArgs.hasOption("start")) {
+			if (!this.confirmBoolean("Are you sure you want to start the benchmark server? (y/n)")) {
+				throw new CancelledException("Cancelled by user");
+			}
+		}
+				
+		// type specified or not?
+		if (this.type.length() == 0) {
+			this.type = this.confirm("Specify the instance type you want to use for the new node: " +
+					"(leave blank to use default `" + manageCluster.getDefaultServerType() + "`` type) ");
+		}	
+		
+		if (type.length() == 0) {
+			type = manageCluster.getDefaultServerType();
+		}
+		printLine("Instance type set to: " + this.type);
+		
+		manageCluster.startServer(this.type);
+		
+		printLine("Server has been launched and is starting up");
+	}
+	
+	protected void stopServer () throws Exception {
+		this.printLine("Ready to stop the benchmark server");
+			
+		if (!this.cliArgs.hasOption("start")) {
+			if (!this.confirmBoolean("Are you sure you want to stop the benchmark server? (y/n)")) {
+				throw new CancelledException("Cancelled by user");
+			}
+		}
+		
+		manageCluster.stopServer();
+		
+		printLine("The benchmark server has been stopped");
+	}
+	
+	protected void stopAll () throws Exception {
+		this.printLine("Ready to stop all benchmark instances");
+			
+		if (!this.cliArgs.hasOption("start")) {
+			if (!this.confirmBoolean("Are you sure you want to stop all benchmark instances? (y/n)")) {
+				throw new CancelledException("Cancelled by user");
+			}
+		}
+		
+		manageCluster.stopAll();
+		
+		printLine("All benchmark instances have been stopped");
+	}
+	
+	protected void updateHosts() throws Exception {
+		this.printLine("Ready to update hosts file");
+		
+		if (!this.cliArgs.hasOption("start")) {
+			if (!this.confirmBoolean("Are you sure you want to update the hosts file? (y/n)")) {
+				throw new CancelledException("Cancelled by user");
+			}
+		}
+		
+		manageCluster.updateHostsFile(this.cliArgs.hasOption("use-public-ip"));
+		
+		printLine("The hosts file has been updated");
+	}
+	
 	protected void _setOptions () throws MissingAwsCredentialsException, InvalidCredentialsFileException {
 		this.awsCredentialsFile = cliArgs.getOptionValue("aws-credentials", System.getProperty("user.home") + "/AwsCredentials.properties");
 		printLine("Using AWS credentials: " + this.awsCredentialsFile);
@@ -149,7 +224,9 @@ public class ManageClusterScript extends ConsoleScript {
 		
 		this.keyName = cliArgs.getOptionValue("key", "dennis");
 		
+		printLine("Setting up client");
 		this.manageCluster = new ManageCluster(awsFile, this.keyName, this.testMode);
+		printLine("Client setup");
 	}
 	
 	public class InvalidActionException extends Exception {

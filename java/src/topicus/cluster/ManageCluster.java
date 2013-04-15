@@ -10,6 +10,8 @@ import java.util.Map;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
+import org.apache.commons.io.FileUtils;
+
 import com.amazonaws.auth.PropertiesCredentials;
 import com.amazonaws.regions.Region;
 import com.amazonaws.regions.Regions;
@@ -68,6 +70,18 @@ public class ManageCluster {
 		}
 	}
 	
+	public String getDefaultServerType () {
+		if (testMode) {
+			return DEFAULT_TEST_TYPE;
+		} else {
+			return DEFAULT_SERVER_TYPE;
+		}
+	}
+	
+	public boolean isServerRunning () {
+		return (this.serverInstance != null);
+	}
+	
 	public boolean isNodeRunning(int nodeId) {
 		return this.nodeInstances.containsKey("node" + nodeId);
 	}
@@ -106,6 +120,93 @@ public class ManageCluster {
 		
 		ec2Client.terminateInstances(request);		
 	}
+	
+	public void startServer(String instanceType) throws Exception {		
+		// validate type
+		if (instanceType == null || instanceType.length() == 0) {
+			instanceType = this.getDefaultServerType();
+		}
+		
+		if (!validateType(instanceType)) {
+			throw new InvalidInstanceTypeException("Invalid instance type `" + instanceType + "` specified");
+		}
+		
+		// check if server is not already running
+		if (this.serverInstance != null) {
+			throw new ServerAlreadyRunningException("The benchmark server is already running!");
+		}
+		
+		this._launchInstance(instanceType, "server");
+	}
+	
+	public void stopServer() throws Exception {
+		// don't do anything if server is not running
+		if (!isServerRunning()) return;
+
+		TerminateInstancesRequest request = new TerminateInstancesRequest();
+		ArrayList<String> idList = new ArrayList<String>();
+		idList.add(serverInstance.getInstanceId());
+		request.setInstanceIds(idList);
+		
+		ec2Client.terminateInstances(request);		
+	}
+	
+	public void stopAll () throws Exception {
+		this.stopServer();
+		
+		for(int i=1; i <= this.getNodeCount(); i++) {
+			this.stopNode(i);
+		}		
+	}
+	
+	public void updateHostsFile () throws Exception {
+		this.updateHostsFile(false);
+	}
+	
+	public void updateHostsFile (boolean usePublic) throws Exception {
+		List<File> files = new ArrayList<File>();
+		files.add(new File("C:\\Windows\\system32\\drivers\\etc\\hosts"));
+		files.add(new File("/etc/hosts"));
+		
+		// do nothing if nothing is running
+		if (this.getNodeCount() == 0 && !this.isServerRunning()) return;
+		
+		for(File file : files) {
+			if (!file.exists()) continue;
+			
+			String hosts = FileUtils.readFileToString(file);
+
+			// update hosts file for nodes
+			for(Map.Entry<String, Instance> entry : nodeInstances.entrySet()) {
+				String nodeName = entry.getKey();
+				Instance node = entry.getValue();
+				
+				String ip = (usePublic) ? node.getPublicIpAddress() : node.getPrivateIpAddress();
+				hosts = _replaceHostsEntry(hosts, nodeName, ip);				
+			}
+			
+			// update hosts file for server
+			if (isServerRunning()) {
+				String ip = (usePublic) ? serverInstance.getPublicIpAddress() : serverInstance.getPrivateIpAddress();
+				hosts = _replaceHostsEntry(hosts, "benchmarkserver", ip);
+			}
+			
+			FileUtils.writeStringToFile(file, hosts);
+		}
+	}
+
+	protected String _replaceHostsEntry(String hosts, String hostName, String newIp) {
+		// remove existing entry
+		hosts = hosts.replaceAll("(.*)(\\s+)" + hostName, "");
+		hosts = hosts.trim();
+		
+		// add new entry
+		hosts += "\n";
+		hosts += newIp + "\t" + hostName;
+		
+		return hosts;
+	}
+	
 	
 	public Map<String, Instance> getNodes () {
 		return this.nodeInstances;
@@ -250,6 +351,12 @@ public class ManageCluster {
 	
 	public class FailedLaunchException extends Exception {
 		public FailedLaunchException(String string) {
+			super(string);
+		}
+	}
+	
+	public class ServerAlreadyRunningException extends Exception {
+		public ServerAlreadyRunningException(String string) {
 			super(string);
 		}
 	}

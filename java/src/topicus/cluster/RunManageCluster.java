@@ -54,6 +54,14 @@ public class RunManageCluster extends RunConsoleScript {
 		
 		options.addOption(
 				OptionBuilder
+				.hasArg(false)
+				.withDescription("Sets the hosts file to use public IP's")
+				.withLongOpt("use-public-ip")
+				.create()
+		);
+		
+		options.addOption(
+				OptionBuilder
 				.hasArg()
 				.withType(Number.class)
 				.withDescription("Specify the node ID")
