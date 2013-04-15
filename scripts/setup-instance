@@ -5,7 +5,7 @@ set -x
 apt-get update && apt-get upgrade -y
 
 # install Java
-apt-get install openjdk-6-jre-headless -y
+apt-get install openjdk-7-jdk -y
 
 # install unzip
 apt-get install unzip -y
@@ -15,6 +15,14 @@ apt-get install ant -y
 
 # create benchmarking structure
 mkdir -p /benchmarking/tools
+
+cd /benchmarking/tools
+
+# download tools and unzip
+wget -qO- -O tmp.zip https://github.com/topicus-ini/benchmarking-dennis/archive/master.zip && unzip tmp.zip && rm tmp.zip
+mv benchmarking-dennis-master/* .
+rm -rf benchmarking-dennis-master/
+
 
 
 printf "\n\nAll OK! Instance is fully setup!\n\n"
