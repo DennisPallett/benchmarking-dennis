@@ -55,8 +55,8 @@ public class RunManageCluster extends RunConsoleScript {
 		options.addOption(
 				OptionBuilder
 				.hasArg(false)
-				.withDescription("Sets the hosts file to use private IP's")
-				.withLongOpt("use-private-ip")
+				.withDescription("Sets the hosts file to use public IP's")
+				.withLongOpt("use-public-ip")
 				.create()
 		);
 		

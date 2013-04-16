@@ -11,6 +11,15 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.codec.binary.Base64;
+import org.apache.http.HttpResponse;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.conn.ConnectTimeoutException;
+import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.params.HttpConnectionParams;
+import org.apache.http.params.HttpParams;
+import org.apache.http.util.EntityUtils;
 
 import com.amazonaws.auth.PropertiesCredentials;
 import com.amazonaws.regions.Region;
@@ -161,17 +170,32 @@ public class ManageCluster {
 		}		
 	}
 	
-	public void updateHostsFile () throws IOException {
-		this.updateHostsFile(false);
+	public String updateHostsFile () throws IOException {
+		boolean usePublic = true;
+		try {
+			HttpClient client = new DefaultHttpClient();
+			HttpParams params = client.getParams();
+			HttpConnectionParams.setConnectionTimeout(params, 2000);
+			HttpConnectionParams.setSoTimeout(params, 2000);		
+			HttpGet httpGet = new HttpGet("http://169.254.169.254/latest/meta-data/instance-id");
+			HttpResponse response = client.execute(httpGet);
+		
+			String instanceId = EntityUtils.toString(response.getEntity());
+			usePublic = false;
+		} catch (ConnectTimeoutException e) {
+			usePublic = true;
+		}
+		
+		return this.updateHostsFile(usePublic);
 	}
 	
-	public void updateHostsFile (boolean usePublic) throws IOException {
+	public String updateHostsFile (boolean usePublic) throws IOException {
 		List<File> files = new ArrayList<File>();
 		files.add(new File("C:\\Windows\\system32\\drivers\\etc\\hosts"));
 		files.add(new File("/etc/hosts"));
-		
+				
 		// do nothing if nothing is running
-		if (this.getNodeCount() == 0 && !this.isServerRunning()) return;
+		if (this.getNodeCount() == 0 && !this.isServerRunning()) return "";
 		
 		for(File file : files) {
 			if (!file.exists()) continue;
@@ -195,6 +219,8 @@ public class ManageCluster {
 			
 			FileUtils.writeStringToFile(file, hosts);
 		}
+		
+		return (usePublic) ? "public" : "private";
 	}
 
 	protected String _replaceHostsEntry(String hosts, String hostName, String newIp) {
@@ -297,6 +323,10 @@ public class ManageCluster {
 		// specify key-pair
 		request.withKeyName(this.keyName);
 		
+		// specify start-up script
+		// which generates AWS credentials file
+		request.withUserData(Base64.encodeBase64String(this._setupAwsScript().getBytes()));
+				
 		// set instance type
 		request.withInstanceType(instanceType);
 		
@@ -373,6 +403,24 @@ public class ManageCluster {
 		tagRequest.withTags(new Tag(TAG_KEY, name));		
 		
 		ec2Client.createTags(tagRequest);
+	}
+	
+	protected String _setupAwsScript () {
+		StringBuilder script = new StringBuilder();
+		
+		script.append("#!/bin/bash");
+		script.append("\n");
+		script.append("set -e -x");
+		script.append("\n");
+		script.append("export DEBIAN_FRONTEND=noninteractive");
+		script.append("\n");
+				
+		String fileName = "AwsCredentials.properties";
+		script.append("echo \"accessKey=" + this.credentials.getAWSAccessKeyId() + "\" >> ~/" + fileName);
+		script.append("\n");
+		script.append("echo \"secretKey=" + this.credentials.getAWSSecretKey() + "\" >> ~/" + fileName);		
+		
+		return script.toString();
 	}
 	
 	public class InvalidCredentialsFileException extends Exception {

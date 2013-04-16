@@ -199,7 +199,7 @@ public class ManageClusterScript extends ConsoleScript {
 	}
 	
 	protected void updateHosts() throws Exception {
-		this.printLine("Ready to update hosts file");
+		this.printLine("Updating hosts file");
 		
 		if (!this.cliArgs.hasOption("start")) {
 			if (!this.confirmBoolean("Are you sure you want to update the hosts file? (y/n)")) {
@@ -207,9 +207,20 @@ public class ManageClusterScript extends ConsoleScript {
 			}
 		}
 		
-		manageCluster.updateHostsFile(this.cliArgs.hasOption("use-private-ip") == false);
+		String ret = "";
+		if (this.cliArgs.hasOption("use-public-ip")) {
+			ret = manageCluster.updateHostsFile(true);
+		} else {
+			ret = manageCluster.updateHostsFile();
+		}
 		
-		printLine("The hosts file has been updated");
+		if (ret.equals("public")) {
+			printLine("The hosts file has been updated with public IP addresses");
+		} else if (ret.equals("private")) {
+			printLine("The hosts file has been updated with private IP addresses");
+		} else {
+			printLine("The host file has not been updated because nothing is running");
+		}
 	}
 	
 	protected void runGUI () {
