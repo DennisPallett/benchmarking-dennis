@@ -199,13 +199,15 @@ public class ManageClusterScript extends ConsoleScript {
 	}
 	
 	protected void updateHosts() throws Exception {
-		this.printLine("Updating hosts file");
+		this.printLine("Ready to update hosts file");
 		
 		if (!this.cliArgs.hasOption("start")) {
 			if (!this.confirmBoolean("Are you sure you want to update the hosts file? (y/n)")) {
 				throw new CancelledException("Cancelled by user");
 			}
 		}
+		
+		printLine("Updating hosts file...");
 		
 		String ret = "";
 		if (this.cliArgs.hasOption("use-public-ip")) {

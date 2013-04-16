@@ -1,4 +1,11 @@
 #!/bin/bash
+
+# The script needs admin rights
+if [ `/usr/bin/id -u` -ne 0 ]; then
+    echo "Run as sudo / root"
+    exit 1
+fi
+
 set -x
 
 # make sure APT-GET is up-to-date
