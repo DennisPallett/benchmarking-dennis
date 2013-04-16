@@ -94,6 +94,7 @@
 		<create-executables file="unload-tenant" mainClass="topicus.loadtenant.RunUnloadTenant" />
 		<create-executables file="load-schema" mainClass="topicus.loadschema.RunLoadSchema" />
 		<create-executables file="process-results" mainClass="topicus.results.RunProcessResults" />
+		<create-executables file="benchmark-instance" mainClass="topicus.benchmarking.RunBenchmarkInstance" />
 		
 		<echo message="Executable: generate-tenant" />
 		<echo file="build/generate-tenant.bat">java -Xmx4048M -cp scripts.jar topicus.data.RunGenerateTenant %*</echo>

@@ -37,6 +37,25 @@ public abstract class ConsoleScript {
 	public void printLine(int msg) {
 		printLine(String.valueOf(msg));
 	}
+		
+	protected String exec (Process proc) throws IOException {
+		StringBuilder ret = new StringBuilder();
+		
+		BufferedReader stdInput = new BufferedReader(new InputStreamReader(proc.getInputStream()));
+		
+		String s;
+		while ((s = stdInput.readLine()) != null) {
+			ret.append(s);
+			ret.append("\n");
+		}
+		
+		return ret.toString();
+	}
+	
+	protected String exec (String cmd) throws IOException {	
+		Process proc = Runtime.getRuntime().exec(cmd);
+		return exec(proc);
+	}
 	
 	protected void setupLogging (String filename) throws IOException {
 		if (filename == null) return;

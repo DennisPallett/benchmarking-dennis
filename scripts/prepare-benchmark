@@ -26,8 +26,8 @@ install() {
 }
 
 create_directory () {
-	mkdir -p /mnt/benchmark
-	cd /mnt/benchmark
+	mkdir -p /mnt/benchmark-instance
+	cd /mnt/benchmark-instance
 }
 
 setup_sysbench() {
