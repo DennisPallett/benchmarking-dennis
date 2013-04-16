@@ -325,7 +325,7 @@ public class ManageCluster {
 		
 		// specify start-up script
 		// which generates AWS credentials file
-		request.withUserData(Base64.encodeBase64String(this._setupAwsScript().getBytes()));
+		request.withUserData(Base64.encodeBase64String(this._setupAwsScript(name).getBytes()));
 				
 		// set instance type
 		request.withInstanceType(instanceType);
@@ -405,7 +405,7 @@ public class ManageCluster {
 		ec2Client.createTags(tagRequest);
 	}
 	
-	protected String _setupAwsScript () {
+	protected String _setupAwsScript (String name) {
 		StringBuilder script = new StringBuilder();
 		
 		script.append("#!/bin/bash");
@@ -418,7 +418,10 @@ public class ManageCluster {
 		String fileName = "AwsCredentials.properties";
 		script.append("echo \"accessKey=" + this.credentials.getAWSAccessKeyId() + "\" >> ~/" + fileName);
 		script.append("\n");
-		script.append("echo \"secretKey=" + this.credentials.getAWSSecretKey() + "\" >> ~/" + fileName);		
+		script.append("echo \"secretKey=" + this.credentials.getAWSSecretKey() + "\" >> ~/" + fileName);	
+		
+		script.append("\n");
+		script.append("hostname " + name);
 		
 		return script.toString();
 	}

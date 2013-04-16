@@ -1,0 +1,59 @@
+#!/bin/bash
+
+# Runs SysBench on a server and saves the results to Amazon S3
+# Primarily used to test the performance stability of a cloud (i.e. Amazon EC2)
+#
+# Created by Dennis Pallett for Topicus I&I as part of an internship assignment.
+
+# The script needs admin rights
+if [ `/usr/bin/id -u` -ne 0 ]; then
+    echo "Run as sudo / root"
+    exit 1
+fi
+
+# Prints a description, runs command(s) and prints a confirmation
+# Note it cannot actually handle failures. Consider that a TODO =)
+run() {
+    echo -ne "$2"
+    eval $1
+    let "space = $COLS - ${#2}"
+    printf "%${space}s\n" " [ OK ]"
+}
+
+# Installs whatever package is given as argument, if it is not installed yet
+install() {
+    [ -z "`dpkg --get-selections | grep \"^$1\s\+install$\"`" ] && apt-get -y install $1 > /dev/null
+}
+
+create_directory () {
+	mkdir -p /mnt/benchmark
+	cd /mnt/benchmark
+}
+
+setup_sysbench() {
+    install 'sysbench'
+}
+
+setup_mysql() {
+    debconf-set-selections <<< 'mysql-server-5.1 mysql-server/root_password password sa'
+    debconf-set-selections <<< 'mysql-server-5.1 mysql-server/root_password_again password sa'
+    install 'mysql-server'
+    service mysql restart
+}
+
+prepare_fileio() {
+    sysbench --test=fileio --file-total-size=10G prepare
+}
+
+prepare_oltp() {
+    mysql -u root --password=sa <<< "CREATE DATABASE IF NOT EXISTS sbtest; USE sbtest; DROP TABLE IF EXISTS sbtest;"
+    sysbench --test=oltp --mysql-user=root --mysql-password=sa --mysql-table-engine=innodb --mysql-db=sbtest --oltp-table-size=1000000 prepare
+}
+
+run create_directory	'Creating benchmark directory'
+run setup_sysbench      'Setting up SysBench'
+run setup_mysql		'Setting up MySQL'
+run prepare_fileio	'Preparing File I/O test'
+run prepare_oltp	'Preparing OLTP test'
+
+printf "\n\nFinished! Ready for benchmark!\n\n"

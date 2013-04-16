@@ -20,6 +20,9 @@ apt-get install unzip -y
 # install ant
 apt-get install ant -y
 
+# install PHP5-CLI
+apt-get install php5-cli y
+
 # create benchmarking structure
 mkdir -p /benchmarking/
 
@@ -36,7 +39,7 @@ ln -s java/build tools
 cd java
 ant build create-scripts
 cd /benchmarking/
-chmod -R +x build
+chmod -R +x .
 
 # add scripts to PATH
 echo "export PATH=$PATH:/benchmarking/tools:/benchmarking/tools/manage-cluster" >> ~/.profile
