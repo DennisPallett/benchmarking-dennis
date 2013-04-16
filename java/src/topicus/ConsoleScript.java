@@ -46,14 +46,20 @@ public abstract class ConsoleScript {
 		this.printLine("Logfile setup");
 	}
 	
-	public String confirm(String msg) throws IOException {
+	public String confirm(String msg) {
 		System.out.print(msg + "  ");
-		String ret = stdin.readLine();
+		String ret;
+		try {
+			ret = stdin.readLine();
+		} catch (IOException e) {
+			ret = "";
+		}
+		
 		System.out.println("");
 		return ret;
 	}
 	
-	public boolean confirmBoolean(String msg) throws IOException {
+	public boolean confirmBoolean(String msg) {
 		boolean ret = false;
 		String input = this.confirm(msg);
 		

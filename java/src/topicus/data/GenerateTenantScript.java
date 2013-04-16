@@ -1,8 +1,10 @@
 package topicus.data;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Random;
 import java.util.Scanner;
@@ -17,28 +19,59 @@ public class GenerateTenantScript extends ConsoleScript {
 	class InvalidTenantIdException extends Exception {}
 	class CancelledException extends Exception {}
 	
+	public class MissingDataFileException extends Exception {
+		public MissingDataFileException(String string) {
+			super(string);
+		}
+	}
+	
+	public class FailedToWriteException extends Exception {
+		public FailedToWriteException(String string) {
+			super(string);
+		}
+	}
+	
 	protected String outputDirectory;
 	protected int tenantId;
+	protected int[] tenantIds;
 	protected String dataDirectory;
 	protected String tenantDirectory;
+	
+	protected boolean skipExisting = false;
 	
 	protected Random randomGenerator;
 	
 	protected HashMap<String, Integer> rowCounts = new HashMap<String, Integer>();
 	
-	public void run () throws Exception {
+	public void run () throws CancelledException, InvalidDataDirectoryException, 
+	InvalidTenantIdException, InvalidOutputDirectoryException, MissingDataFileException, FailedToWriteException {
 		printLine("Started-up tenant generator tool");	
 				
 		this._setOptions();
 		
 		if (!this.cliArgs.hasOption("start")) {
-			if (!confirmBoolean("Start generating data for tenant #" + tenantId + "? (y/n)")) {
+			if (!confirmBoolean("Start generating data for tenant " + Arrays.toString(tenantIds) + "? (y/n)")) {
 				printError("Stopping");
 				throw new CancelledException();
 			}
 		}
 		
-		this._checkTenantExists();
+		for(int tenantId : tenantIds) {
+			this._generateTenant(tenantId);
+		}	
+		
+		this.printLine("Successfully finished!");
+	}
+	
+	protected void _generateTenant(int tenantId) throws CancelledException, MissingDataFileException, FailedToWriteException {
+		printLine("Generating tenant #" + tenantId);
+		
+		this.tenantId = tenantId;
+		this.tenantDirectory = this.outputDirectory + tenantId + "/";
+		
+		if (this._checkTenantExists() == false) {
+			return;
+		}
 		
 		this._createTenantFile("adm_data.tbl");
 		this._createTenantFile("org_data.tbl");
@@ -46,24 +79,25 @@ public class GenerateTenantScript extends ConsoleScript {
 		this._createTenantFile("gb_data.tbl");
 		this._createTenantFile("kp_data.tbl");
 		
-		this._createTenantFactFile();
+		this._createTenantFactFile();	
 		
-		this.printLine("Successfully finished!");
+		printLine("Generated tenant #" + tenantId);
 	}
 	
-	protected void _createTenantFactFile () throws Exception {
+	protected void _createTenantFactFile () throws FailedToWriteException, MissingDataFileException {
 		printLine("Generating fact file");
 		
 		File file = new File(this.dataDirectory + "fe_data.tbl");
-		if (!file.exists()) {
-			printError("Missing data file `fe_data.tbl` in data directory!");
-			throw new Exception();
-		}
 		
 		// load data in memory
 		this.printLine("Loading fact file into memory");
 		String[] lines = new String[3740431];
-		Scanner scan = new Scanner(file).useDelimiter("\n");
+		Scanner scan;
+		try {
+			scan = new Scanner(file).useDelimiter("\n");
+		} catch (FileNotFoundException e1) {
+			throw new MissingDataFileException("Missing data file `fe_data.tbl` in data directory!");
+		}
 		int i = 0;
 		while(scan.hasNext()) {
 			lines[i] = scan.next();
@@ -118,7 +152,11 @@ public class GenerateTenantScript extends ConsoleScript {
 				
 				if (lineCounter % 1000000 == 0) {
 					printLine("Writing lines");
-					FileUtils.writeStringToFile(newFile, stringBuffer.toString(), true);
+					try {
+						FileUtils.writeStringToFile(newFile, stringBuffer.toString(), true);
+					} catch (IOException e) {
+						throw new FailedToWriteException("Unable to write fact file");
+					}
 					stringBuffer = new StringBuilder((int)file.length()/3);
 				}
 				
@@ -130,7 +168,11 @@ public class GenerateTenantScript extends ConsoleScript {
 		}
 		
 		printLine("Writing lines");
-		FileUtils.writeStringToFile(newFile, stringBuffer.toString(), true);
+		try {
+			FileUtils.writeStringToFile(newFile, stringBuffer.toString(), true);
+		} catch (IOException e) {
+			throw new FailedToWriteException("Unable to write fact file");
+		}
 		printLine("Processed " + lineCounter + " rows");
 		
 		lines = null;
@@ -138,18 +180,19 @@ public class GenerateTenantScript extends ConsoleScript {
 		printLine("Finished fact file!");
 	}
 	
-	protected void _createTenantFile(String fileName) throws Exception {
+	protected void _createTenantFile(String fileName) throws MissingDataFileException, FailedToWriteException {
 		printLine("Creating " + fileName);
 		
 		File file = new File(this.dataDirectory + fileName);
-		if (!file.exists()) {
-			printError("Missing data file `" + fileName + "` in data directory!");
-			throw new Exception();
-		}
-		
+
 		// load data in memory
 		ArrayList<String> lines = new ArrayList<String>();
-		Scanner scan = new Scanner(file).useDelimiter("\n");
+		Scanner scan;
+		try {
+			scan = new Scanner(file).useDelimiter("\n");
+		} catch (FileNotFoundException e) {
+			throw new MissingDataFileException("Missing data file `" + fileName + "` in data directory!");
+		}
 		while(scan.hasNext()) {
 			lines.add(scan.next());
 		}
@@ -206,7 +249,11 @@ public class GenerateTenantScript extends ConsoleScript {
 		newContent = newContent.replace("%TENANT_ID%", String.valueOf(this.tenantId));
 		
 		// write new file
-		FileUtils.writeStringToFile(new File(this.tenantDirectory + fileName), newContent);
+		try {
+			FileUtils.writeStringToFile(new File(this.tenantDirectory + fileName), newContent);
+		} catch (IOException e) {
+			throw new FailedToWriteException("Unable to write `" + fileName + "` file");
+		}
 		
 		printLine("Written `" + fileName + "` to tenant directory");		
 	}
@@ -234,52 +281,97 @@ public class GenerateTenantScript extends ConsoleScript {
 		line.replace(startPos,  endPos,  newValue);
 	}
 	
-	protected void _checkTenantExists() throws Exception {
+	protected boolean _checkTenantExists() {
 		File tenantDir = new File(this.tenantDirectory);
 		if (tenantDir.exists()) {
 			printError("Tenant directory already exists");
-			if (!confirmBoolean("Do you want to delete existing tenant directory? (y/n)")) {
-				printError("Stopping");
-				throw new CancelledException();
+			
+			// skip?
+			if (skipExisting || confirmBoolean("Do you want to skip this tenant? (y/n)")) {
+				return false;
 			}
 			
-			FileUtils.deleteDirectory(tenantDir);
+			// delete?
+			if (!confirmBoolean("Do you want to delete existing tenant directory? (y/n)")) {
+				return false;
+			}
+			
+			// yes, delete existing tenant directory
+			try {
+				FileUtils.deleteDirectory(tenantDir);
+			} catch (IOException e) {
+				// don't care?
+			}
 		}
 		
 		// create tenant dir
 		tenantDir.mkdir();
 		this.printLine("Created tenant directory");
+		return true;
 	}
 	
-	protected void _setOptions () throws Exception {
+	protected void _setOptions () throws InvalidDataDirectoryException, InvalidTenantIdException, InvalidOutputDirectoryException {
 		// output directory
 		this.outputDirectory = cliArgs.getOptionValue("output", "");
 		File outputDir = new File(this.outputDirectory, "");
-		if (outputDir.exists() == false || outputDir.isFile()) {
+		if (this.outputDirectory.length() == 0 || outputDir.exists() == false || outputDir.isFile()) {
 			throw new InvalidOutputDirectoryException();
 		}
 		this.outputDirectory = outputDir.getAbsolutePath() + "/";
 		this.printLine("Output directory: " + this.outputDirectory);
 		
-		// output directory
+		// tenant directory
 		this.dataDirectory = cliArgs.getOptionValue("tenant-data-directory", "");
 		File dataDir = new File(this.dataDirectory, "");
-		if (dataDir.exists() == false || dataDir.isFile()) {
+		if (this.dataDirectory.length() == 0 || dataDir.exists() == false || dataDir.isFile()) {
 			throw new InvalidDataDirectoryException();
 		}
 		this.dataDirectory = dataDir.getAbsolutePath() + "/";
 		this.printLine("Using data directory: " + this.dataDirectory);
 		
-		this.tenantId = Integer.parseInt(cliArgs.getOptionValue("id"));
-		this.printLine("Tenant ID set to: " + this.tenantId);
-		
-		if (this.tenantId > 700) {
-			this.printError("Invalid tenant ID spciefied, only support up to 700");
-			throw new InvalidTenantIdException ();
+		String tenantId = cliArgs.getOptionValue("id", "");
+		if (tenantId.length() == 0) {
+			throw new InvalidTenantIdException();
 		}
 		
-		this.tenantDirectory = this.outputDirectory + this.tenantId + "/";
+		if(tenantId.indexOf("-") < 0) {
+			// single ID
+			try {
+				tenantIds = new int[]{Integer.parseInt(tenantId)};
+			} catch (NumberFormatException e) {
+				throw new InvalidTenantIdException();
+			}
+		} else {
+			String[] split = tenantId.split("-");
+			
+			int startId = 0;
+			int endId = 0;
+			try {
+				startId = Integer.parseInt(split[0]);
+				endId = Integer.parseInt(split[1]);
+			} catch (NumberFormatException e) {
+				throw new InvalidTenantIdException();
+			}
+			
+			if (endId - startId < 1) {
+				throw new InvalidTenantIdException();
+			}
+			
+			tenantIds = new int[(endId-startId)+1];
+			int id = startId;
+			for(int i=0; i < tenantIds.length; i++) {
+				tenantIds[i] = id;
+				id++;
+			}			
+		}
 		
+		this.skipExisting = this.cliArgs.hasOption("skip-existing");
+		if (skipExisting) {
+			printLine("Automatically skipping existing tenants");
+		}
+		
+		this.printLine("Tenant ID set to: " + Arrays.toString(this.tenantIds));
+			
 		this.randomGenerator = new Random(this.tenantId);
 	}
 	

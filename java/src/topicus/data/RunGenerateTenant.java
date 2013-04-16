@@ -6,6 +6,7 @@ import org.apache.commons.cli.OptionBuilder;
 
 import topicus.RunConsoleScript;
 import topicus.RunDatabaseScript;
+import topicus.data.GenerateTenantScript.InvalidOutputDirectoryException;
 
 public class RunGenerateTenant extends RunConsoleScript {
 	
@@ -15,7 +16,6 @@ public class RunGenerateTenant extends RunConsoleScript {
 		options.addOption(
 				OptionBuilder
 				.hasArg()
-				.isRequired()
 				.withDescription("Specify the tenant template files")
 				.withLongOpt("tenant-data-directory")
 				.create()
@@ -24,10 +24,16 @@ public class RunGenerateTenant extends RunConsoleScript {
 		options.addOption(
 				OptionBuilder
 				.hasArg()
-				.isRequired()
-				.withType(Number.class)
 				.withDescription("Specify the ID of the new tenant")
 				.withLongOpt("id")
+				.create()
+		);
+		
+		options.addOption(
+				OptionBuilder
+				.hasArg(false)
+				.withDescription("Switch to automatically skip existing tenants")
+				.withLongOpt("skip-existing")
 				.create()
 		);
 	}
@@ -49,6 +55,8 @@ public class RunGenerateTenant extends RunConsoleScript {
 		
 		try {
 			runner.run(args);
+		} catch (InvalidOutputDirectoryException e) {
+			System.err.println("ERROR: you must specify a valid output directory with --output!");
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
