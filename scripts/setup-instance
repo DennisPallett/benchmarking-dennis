@@ -35,6 +35,7 @@ ln -s java/build tools
 # build tools and make executable
 cd java
 ant build create-scripts
+cd /benchmarking/
 chmod -R +x build
 
 # add scripts to PATH

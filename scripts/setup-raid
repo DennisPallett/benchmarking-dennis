@@ -1,0 +1,53 @@
+#!/bin/bash
+export DEBIAN_FRONTEND=noninteractive
+
+# The script needs admin rights
+if [ `/usr/bin/id -u` -ne 0 ]; then
+    echo "Run as sudo / root"
+    exit 1
+fi
+
+DEVICES=""
+DEVICES_COUNT=0
+
+check_device_exists() {
+	if  fdisk -l 2>/dev/null | grep -q "$1"; then
+		DEVICES="$DEVICES $1"
+		DEVICES_COUNT=$[DEVICES_COUNT + 1]
+	fi
+}
+
+check_device_exists "/dev/xvdb"
+check_device_exists "/dev/xvdc"
+check_device_exists "/dev/xvdd"
+check_device_exists "/dev/xvde"
+
+echo "Found $DEVICES_COUNT devices: $DEVICES"
+
+if [ $DEVICES_COUNT -lt 2 ]; then
+	echo "Not enough devices for RAID0"
+	exit 1;
+fi
+
+echo "Unmounting /mnt"
+umount /mnt
+echo "Unmounted"
+
+echo "Installing MDADM"
+apt-get install mdadm -y
+echo "MDADM Installed"
+
+yes | mdadm --create /dev/md0 --level=0 -c256 --raid-devices="$DEVICES_COUNT" $DEVICES
+echo "DEVICE $DEVICES" > /etc/mdadm.conf
+mdadm --detail --scan >> /etc/mdadm.conf
+
+blockdev --setra 2048 /dev/md0
+mkfs.ext4 /dev/md0
+mkdir -p /mnt && mount -t ext4 -o noatime /dev/md0 /mnt
+cd /mnt
+
+perl -ne 'print if $_ !~ /mnt/' /etc/fstab > /etc/fstab.2
+echo '#/dev/md0  /mnt  ext4    defaults 0 0' >> /etc/fstab.2
+mv /etc/fstab.2 /etc/fstab
+
+printf "\n\nAll OK! RAID0 is setup!\n\n"
