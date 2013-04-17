@@ -13,7 +13,6 @@ public class RunLoadSchema extends RunDatabaseScript {
 		options.addOption(
 				OptionBuilder
 				.hasArg()
-				.isRequired()
 				.withDescription("Specify the local directory on the database node that contains the base data")
 				.withLongOpt("base-data")
 				.create()

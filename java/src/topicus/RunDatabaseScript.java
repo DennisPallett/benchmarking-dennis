@@ -62,7 +62,7 @@ public class RunDatabaseScript extends RunConsoleScript {
 		if (cliArgs.hasOption("type")) {
 			type = cliArgs.getOptionValue("type", "");
 		} else if (typeFile.exists()) {
-			type = FileUtils.readFileToString(typeFile);
+			type = FileUtils.readFileToString(typeFile).trim();
 		} else {
 			throw new Exception("No database type specified through file or argument!");
 		}

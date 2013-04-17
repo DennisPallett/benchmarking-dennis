@@ -783,7 +783,7 @@ public class LoadSchemaScript extends DatabaseScript {
 	}
 	
 	protected void _setOptions () throws Exception {	
-		this.baseDirectory = this.cliArgs.getOptionValue("base-data", "");
+		this.baseDirectory = this.cliArgs.getOptionValue("base-data", "/benchmarking/data/base-data/");
 		if (this.baseDirectory.length() == 0) {
 			throw new MissingBaseDataDirectoryException("Missing base data directory!");
 		}
