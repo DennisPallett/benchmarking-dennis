@@ -38,7 +38,7 @@ public abstract class ConsoleScript {
 		printLine(String.valueOf(msg));
 	}
 		
-	protected String exec (Process proc) throws IOException {
+	public String exec (Process proc) throws IOException {
 		StringBuilder ret = new StringBuilder();
 		
 		BufferedReader stdInput = new BufferedReader(new InputStreamReader(proc.getInputStream()));
@@ -52,7 +52,7 @@ public abstract class ConsoleScript {
 		return ret.toString();
 	}
 	
-	protected String exec (String cmd) throws IOException {	
+	public String exec (String cmd) throws IOException {	
 		Process proc = Runtime.getRuntime().exec(cmd);
 		return exec(proc);
 	}

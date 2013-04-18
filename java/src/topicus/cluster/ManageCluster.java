@@ -1,12 +1,16 @@
 package topicus.cluster;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
@@ -20,6 +24,8 @@ import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.params.HttpConnectionParams;
 import org.apache.http.params.HttpParams;
 import org.apache.http.util.EntityUtils;
+
+import topicus.ConsoleScript;
 
 import com.amazonaws.auth.PropertiesCredentials;
 import com.amazonaws.regions.Region;
@@ -143,7 +149,7 @@ public class ManageCluster {
 			throw new ServerAlreadyRunningException("The benchmark server is already running!");
 		}
 		
-		this._launchInstance(instanceType, "server");
+		this._launchInstance(instanceType, "benchmarkserver");
 	}
 	
 	public void stopServer() {
@@ -168,6 +174,101 @@ public class ManageCluster {
 				// don't care, ignoring
 			}
 		}		
+	}
+	
+	public void setupSsh (ConsoleScript console) throws MissingSshConfigFileException, IOException {
+		File sshConfFile = new File("/etc/ssh/ssh_config");
+		if (sshConfFile.exists() == false) {
+			throw new MissingSshConfigFileException("SSH config file (/etc/ssh/ssh_config) does not exist");
+		}
+		
+		String sshConf = FileUtils.readFileToString(sshConfFile);
+				
+		// use host private key as identity key
+		if (sshConf.indexOf("Host node*") < 0) {
+			sshConf += "\n\n";
+			sshConf += "Host node*\n";
+			sshConf += "  IdentityFile /etc/ssh/ssh_host_rsa_key";
+		}
+		if (sshConf.indexOf("Host benchmarkserver") < 0) {
+			sshConf += "\n\n";
+			sshConf += "Host benchmarkserver\n";
+			sshConf += "  IdentityFile /etc/ssh/ssh_host_rsa_key";
+		}
+		
+		// write new ssh config file
+		FileUtils.writeStringToFile(sshConfFile,  sshConf);
+		
+		// find out which nodes and server is active
+		String hosts = FileUtils.readFileToString(new File("/etc/hosts"));
+		ArrayList<String> activeHosts = new ArrayList<String>();
+		
+		boolean isActive = true;
+		int nodeId = 1;
+		while(isActive) {
+			if (hosts.indexOf("node" + nodeId) > 0) {
+				isActive = true;
+				activeHosts.add("node"+ nodeId);
+			} else {
+				isActive = false;
+			}
+			nodeId++;
+		}
+		if (hosts.indexOf("benchmarkserver") > 0) {
+			activeHosts.add("benchmarkserver");
+		}
+		
+		// update sshd config file
+		File serverConfFile = new File("/etc/ssh/sshd_config");
+		if (serverConfFile.exists() == false) {
+			throw new MissingSshConfigFileException("SSH server config file (/etc/ssh/sshd_config) does not exist");
+		}
+		
+		String serverConf = FileUtils.readFileToString(serverConfFile);
+		
+		// remove any existing AuthorizedKeysFile setting
+		serverConf = serverConf.replaceAll("(?m)AuthorizedKeysFile(.*?)$", "");
+		serverConf = serverConf.trim();
+		serverConf += "\nAuthorizedKeysFile /etc/ssh/%u_authorized_keys %h/.ssh/authorized_keys";
+		
+		FileUtils.writeStringToFile(serverConfFile, serverConf);
+		
+		// restart SSH server
+		console.exec("/etc/init.d/ssh restart");
+		
+		// get all public keys using ssh-keyscan
+		HashMap<String, String> keyList = new HashMap<String, String>();
+		for(String host : activeHosts) {
+			ArrayList<String> commands = new ArrayList<String>();
+			commands.add("/bin/bash");
+			commands.add("-c");
+			commands.add("ssh-keyscan -t rsa " + host);
+			
+			ProcessBuilder pb = new ProcessBuilder(commands);	
+			
+			String ret = console.exec(pb.start());
+			int sepPos = ret.indexOf("ssh-rsa");
+			
+			String hostName = ret.substring(0, sepPos).trim();
+			String hostKey = ret.substring(sepPos).trim();
+			System.out.println(hostName + ":");
+			System.out.println(hostKey);
+			keyList.put(hostName, hostKey);
+		}		
+		
+		// create known_hosts and authorized_keys files
+		String knownHosts = "";
+		String authorizedKeys = "";
+		for(Entry<String, String> entry : keyList.entrySet()) {
+			String hostName = entry.getKey();
+			String hostKey = entry.getValue();
+			
+			knownHosts += hostName + " " + hostKey + "\n";
+			authorizedKeys += hostKey + "\n";
+		}
+		
+		FileUtils.writeStringToFile(new File("/etc/ssh/ssh_known_hosts"), knownHosts);
+		FileUtils.writeStringToFile(new File("/etc/ssh/root_authorized_keys"), authorizedKeys);
 	}
 	
 	public String updateHostsFile () throws IOException {
@@ -301,7 +402,7 @@ public class ManageCluster {
 				List<Tag> tags = instance.getTags();
 				Tag tag = tags.get(0);
 				
-				if (tag.getValue().equals("server")) {
+				if (tag.getValue().equals("benchmarkserver")) {
 					this.serverInstance = instance;
 				} else {
 					this.nodeInstances.put(tag.getValue(), instance);
@@ -452,6 +553,12 @@ public class ManageCluster {
 	
 	public class InvalidNodeIdException extends Exception {
 		
+	}
+	
+	public class MissingSshConfigFileException extends Exception {
+		public MissingSshConfigFileException(String string) {
+			super(string);
+		}
 	}
 
 }

@@ -14,6 +14,7 @@ import com.amazonaws.services.ec2.model.Instance;
 
 import topicus.ConsoleScript;
 import topicus.cluster.ManageCluster.InvalidCredentialsFileException;
+import topicus.cluster.ManageCluster.MissingSshConfigFileException;
 
 public class ManageClusterScript extends ConsoleScript {
 	protected String awsCredentialsFile;
@@ -53,11 +54,25 @@ public class ManageClusterScript extends ConsoleScript {
 			this.updateHosts();
 		} else if (action.equals("run-gui")) {
 			this.runGUI();
+		} else if (action.equals("setup-ssh")) {
+			this.setupSsh();
 		} else {
 			throw new InvalidActionException("The specified action `" + action + "` is not a valid action");
 		}
 		
 		this.printLine("Successfully finished!");
+	}
+	
+	protected void setupSsh () throws CancelledException, IOException, MissingSshConfigFileException {
+		if (!this.cliArgs.hasOption("start")) {
+			if (!this.confirmBoolean("Are you sure you want to setup SSH configuration? (y/n)")) {
+				throw new CancelledException("Cancelled by user");
+			}
+		}
+		
+		printLine("Setting up SSH configuration");
+		manageCluster.setupSsh(this);
+		printLine("SSH configuration set up!");
 	}
 	
 	protected void printStatus () throws Exception {

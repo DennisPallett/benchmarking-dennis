@@ -85,6 +85,7 @@
 		<create-manage-cluster-executables action="stop-all" />
 		<create-manage-cluster-executables action="update-hosts" />
 		<create-manage-cluster-executables action="run-gui" />
+		<create-manage-cluster-executables action="setup-ssh" />
 	</target>
 	
 	<target name="create-scripts" depends="create-jar,create-manage-cluster-scripts">
