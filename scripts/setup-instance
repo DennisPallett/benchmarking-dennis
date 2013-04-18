@@ -45,4 +45,7 @@ chmod -R +x .
 echo "export PATH=$PATH:/benchmarking/tools:/benchmarking/tools/manage-cluster" >> ~/.profile
 source ~/.profile
 
+# copy host key to root directory so that root node-to-node is immediately enabled
+cp /etc/ssh/ssh_host_rsa_key ~/
+
 printf "\n\nAll OK! Instance is fully setup!\n\n"

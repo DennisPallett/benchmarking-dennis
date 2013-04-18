@@ -22,6 +22,7 @@ public class ManageClusterScript extends ConsoleScript {
 	protected ManageCluster manageCluster;
 	
 	protected boolean testMode = false;
+	protected boolean skipClusterCheck = false;
 	
 	protected String keyName = "";
 	
@@ -32,9 +33,11 @@ public class ManageClusterScript extends ConsoleScript {
 		
 		this._setOptions();
 		
-		printLine("Loading information about cluster");
-		this.manageCluster.updateClusterInfo();
-		printLine("Information loaded");
+		if (!skipClusterCheck) {
+			printLine("Loading information about cluster");
+			this.manageCluster.updateClusterInfo();
+			printLine("Information loaded");
+		}
 		
 		// determine action
 		String action = this.cliArgs.getOptionValue("action", "").toLowerCase();
@@ -260,8 +263,10 @@ public class ManageClusterScript extends ConsoleScript {
 		
 		this.keyName = cliArgs.getOptionValue("key", "dennis");
 		
+		this.skipClusterCheck = cliArgs.hasOption("skip-cluster-check");
+		
 		printLine("Setting up client");
-		this.manageCluster = new ManageCluster(awsFile, this.keyName, this.testMode);
+		this.manageCluster = new ManageCluster(awsFile, this.keyName, this.testMode, skipClusterCheck);
 		printLine("Client setup");
 	}
 	

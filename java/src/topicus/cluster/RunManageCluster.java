@@ -68,6 +68,15 @@ public class RunManageCluster extends RunConsoleScript {
 				.withLongOpt("node")
 				.create()
 		);
+		
+		options.addOption(
+				OptionBuilder
+				.hasArg(false)
+				.withDescription("Switch to skip cluster status check")
+				.withLongOpt("skip-cluster-check")
+				.create()
+		);
+		
 
 	}
 	

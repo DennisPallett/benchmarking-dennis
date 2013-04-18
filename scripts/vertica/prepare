@@ -88,6 +88,13 @@ modify_limits() {
     done
 }
 
+create_account() {
+	useradd --create-home --shell "/bin/bash" dbadmin -p test
+	cp /etc/ssh/ssh_host_rsa_key /home/dbadmin/
+	chown dbadmin:dbadmin /home/dbadmin/ssh_host_rsa_key
+	echo "PATH=$PATH:/opt/vertica/bin" >> /home/dbadmin/.bashrc
+}
+
 # Set the $TZ variable to whatever is in /etc/timezone
 # Note you have to log out before this works, so Vertica still whines about it
 # during installation. Not sure when Vertica uses this, but I guess they do at some point
@@ -113,8 +120,8 @@ run setup_ssh      'Setting up SSH'
 run setup_sysstat  'Setting up sysstat'
 run setup_pstack   'Setting up pstack'
 run debian_version 'Modifying /etc/debian_version'
-run modify_hosts   'Modifying /etc/hosts'
 run modify_limits  'Modifying /etc/security/limits.conf'
 run set_timezone   'Setting $TZ variable to /etc/timezone'
 run update_path    'Adding /opt/vertica/bin to PATH'
 run clean_ssh_dir  'Cleaning existing configuration in ~/.ssh directory'
+run create_account 'Creating dbadmin account'

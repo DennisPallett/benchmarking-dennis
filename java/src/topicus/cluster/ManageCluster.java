@@ -5,6 +5,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -58,6 +59,7 @@ public class ManageCluster {
 	protected AmazonEC2Client ec2Client;
 	
 	protected boolean testMode;
+	protected boolean skipClusterCheck;
 	
 	protected String keyName;
 	
@@ -66,10 +68,11 @@ public class ManageCluster {
 	protected Instance serverInstance;
 	protected SortedMap<String, Instance> nodeInstances;
 		
-	public ManageCluster(File awsFile, String keyName, boolean testMode) throws InvalidCredentialsFileException {
+	public ManageCluster(File awsFile, String keyName, boolean testMode, boolean skipClusterCheck) throws InvalidCredentialsFileException {
 		this.setCredentials(awsFile);
 		this.testMode = testMode;
 		this.keyName = keyName;
+		this.skipClusterCheck = skipClusterCheck;
 				
 		ec2Client = new AmazonEC2Client(this.credentials);
 		ec2Client.setRegion(Region.getRegion(Regions.EU_WEST_1));
@@ -177,28 +180,6 @@ public class ManageCluster {
 	}
 	
 	public void setupSsh (ConsoleScript console) throws MissingSshConfigFileException, IOException {
-		File sshConfFile = new File("/etc/ssh/ssh_config");
-		if (sshConfFile.exists() == false) {
-			throw new MissingSshConfigFileException("SSH config file (/etc/ssh/ssh_config) does not exist");
-		}
-		
-		String sshConf = FileUtils.readFileToString(sshConfFile);
-				
-		// use host private key as identity key
-		if (sshConf.indexOf("Host node*") < 0) {
-			sshConf += "\n\n";
-			sshConf += "Host node*\n";
-			sshConf += "  IdentityFile /etc/ssh/ssh_host_rsa_key";
-		}
-		if (sshConf.indexOf("Host benchmarkserver") < 0) {
-			sshConf += "\n\n";
-			sshConf += "Host benchmarkserver\n";
-			sshConf += "  IdentityFile /etc/ssh/ssh_host_rsa_key";
-		}
-		
-		// write new ssh config file
-		FileUtils.writeStringToFile(sshConfFile,  sshConf);
-		
 		// find out which nodes and server is active
 		String hosts = FileUtils.readFileToString(new File("/etc/hosts"));
 		ArrayList<String> activeHosts = new ArrayList<String>();
@@ -209,6 +190,7 @@ public class ManageCluster {
 			if (hosts.indexOf("node" + nodeId) > 0) {
 				isActive = true;
 				activeHosts.add("node"+ nodeId);
+				activeHosts.add(InetAddress.getByName("node" + nodeId).getHostAddress());
 			} else {
 				isActive = false;
 			}
@@ -216,7 +198,27 @@ public class ManageCluster {
 		}
 		if (hosts.indexOf("benchmarkserver") > 0) {
 			activeHosts.add("benchmarkserver");
+			activeHosts.add(InetAddress.getByName("benchmarkserver").getHostAddress());
 		}
+				
+		File sshConfFile = new File("/etc/ssh/ssh_config");
+		if (sshConfFile.exists() == false) {
+			throw new MissingSshConfigFileException("SSH config file (/etc/ssh/ssh_config) does not exist");
+		}
+		
+		String sshConf = FileUtils.readFileToString(sshConfFile);
+		
+		String toAdd = "IdentityFile ~/ssh_host_rsa_key";
+		if (sshConf.indexOf(toAdd) < 0) {
+			int beginPos = sshConf.indexOf("Host *");
+			sshConf = sshConf.substring(0, beginPos + "Host *".length())
+					+ "\n"
+					+ toAdd
+					+ sshConf.substring(beginPos);
+		}
+								
+		// write new ssh config file
+		FileUtils.writeStringToFile(sshConfFile,  sshConf);
 		
 		// update sshd config file
 		File serverConfFile = new File("/etc/ssh/sshd_config");
@@ -228,8 +230,10 @@ public class ManageCluster {
 		
 		// remove any existing AuthorizedKeysFile setting
 		serverConf = serverConf.replaceAll("(?m)AuthorizedKeysFile(.*?)$", "");
+		serverConf = serverConf.replaceAll("(?m)StrictModes(.*?)$", "");
 		serverConf = serverConf.trim();
-		serverConf += "\nAuthorizedKeysFile /etc/ssh/%u_authorized_keys %h/.ssh/authorized_keys";
+		serverConf += "\nAuthorizedKeysFile /etc/ssh/global_authorized_keys %h/.ssh/authorized_keys";
+		serverConf += "\nStrictModes no";
 		
 		FileUtils.writeStringToFile(serverConfFile, serverConf);
 		
@@ -268,7 +272,7 @@ public class ManageCluster {
 		}
 		
 		FileUtils.writeStringToFile(new File("/etc/ssh/ssh_known_hosts"), knownHosts);
-		FileUtils.writeStringToFile(new File("/etc/ssh/root_authorized_keys"), authorizedKeys);
+		FileUtils.writeStringToFile(new File("/etc/ssh/global_authorized_keys"), authorizedKeys);
 	}
 	
 	public String updateHostsFile () throws IOException {
