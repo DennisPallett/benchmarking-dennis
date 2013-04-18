@@ -20,8 +20,8 @@ apt-get install unzip -y
 # install ant
 apt-get install ant -y
 
-# install PHP5-CLI
-apt-get install php5-cli y
+# install SSH client and server
+apt-get install ssh -y
 
 # create benchmarking structure
 mkdir -p /benchmarking/
