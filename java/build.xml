@@ -86,6 +86,8 @@
 		<create-manage-cluster-executables action="update-hosts" />
 		<create-manage-cluster-executables action="run-gui" />
 		<create-manage-cluster-executables action="setup-ssh" />
+		<create-manage-cluster-executables action="attach-tenant-ebs" />
+		<create-manage-cluster-executables action="detach-tenant-ebs" />
 	</target>
 	
 	<target name="create-scripts" depends="create-jar,create-manage-cluster-scripts">

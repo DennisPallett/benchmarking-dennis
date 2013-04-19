@@ -32,10 +32,14 @@ import com.amazonaws.auth.PropertiesCredentials;
 import com.amazonaws.regions.Region;
 import com.amazonaws.regions.Regions;
 import com.amazonaws.services.ec2.AmazonEC2Client;
+import com.amazonaws.services.ec2.model.AttachVolumeRequest;
 import com.amazonaws.services.ec2.model.BlockDeviceMapping;
 import com.amazonaws.services.ec2.model.CreateTagsRequest;
 import com.amazonaws.services.ec2.model.DescribeInstancesRequest;
 import com.amazonaws.services.ec2.model.DescribeInstancesResult;
+import com.amazonaws.services.ec2.model.DescribeVolumesRequest;
+import com.amazonaws.services.ec2.model.DescribeVolumesResult;
+import com.amazonaws.services.ec2.model.DetachVolumeRequest;
 import com.amazonaws.services.ec2.model.EbsBlockDevice;
 import com.amazonaws.services.ec2.model.Filter;
 import com.amazonaws.services.ec2.model.Instance;
@@ -45,6 +49,8 @@ import com.amazonaws.services.ec2.model.RunInstancesRequest;
 import com.amazonaws.services.ec2.model.RunInstancesResult;
 import com.amazonaws.services.ec2.model.Tag;
 import com.amazonaws.services.ec2.model.TerminateInstancesRequest;
+import com.amazonaws.services.ec2.model.Volume;
+import com.amazonaws.services.ec2.model.VolumeState;
 
 public class ManageCluster {
 	public static final String DEFAULT_NODE_TYPE = "m1.xlarge";
@@ -105,6 +111,78 @@ public class ManageCluster {
 	
 	public Instance getNode(int nodeId) {
 		return nodeInstances.get("node" + nodeId);
+	}
+	
+	public Volume getTenantEbs () {
+		Volume tenantEbs = null;
+		
+		// find EBS
+		// setup filters
+		ArrayList<Filter> filters = new ArrayList<Filter>();		
+		String[] values = {TAG_KEY};
+		filters.add(new Filter("tag-key", Arrays.asList(values)));
+		filters.add(new Filter("tag-value", Arrays.asList(new String[]{"tenant-data"})));
+		
+		// setup request (with filters)
+		DescribeVolumesRequest request = new DescribeVolumesRequest();
+		request.withFilters(filters);
+		
+		// get matching instances
+		DescribeVolumesResult result = ec2Client.describeVolumes(request);
+		List<Volume> volumeList = result.getVolumes();
+		
+		if (volumeList.size() > 0) {
+			tenantEbs = volumeList.get(0);
+		}
+			
+		return tenantEbs;
+	}
+	
+	public void attachTenantEbs(int nodeId) throws InvalidNodeIdException, MissingTenantEbsException, TenantEbsUnavailableException {
+		if (!isNodeRunning(nodeId)) {
+			throw new InvalidNodeIdException();
+		}
+		
+		Instance node = getNode(nodeId);
+		
+		// get tenant EBS volume
+		Volume tenantEbs = getTenantEbs();
+		if (tenantEbs == null) {
+			throw new MissingTenantEbsException();
+		}
+		
+		// make sure EBS is available
+		if (VolumeState.fromValue(tenantEbs.getState()) != VolumeState.Available) {
+			throw new TenantEbsUnavailableException("Tenant EBS is not available, current state is `" + tenantEbs.getState() + "`");
+		}
+		
+		// request to attach
+		AttachVolumeRequest attachRequest = new AttachVolumeRequest();
+		attachRequest.setInstanceId(node.getInstanceId());
+		attachRequest.setVolumeId(tenantEbs.getVolumeId());
+		attachRequest.setDevice("/dev/sdf");
+		
+		// attach volume
+		ec2Client.attachVolume(attachRequest);		
+	}
+	
+	public void detachTenantEbs () throws MissingTenantEbsException {
+		// get tenant EBS volume
+		Volume tenantEbs = getTenantEbs();
+		if (tenantEbs == null) {
+			throw new MissingTenantEbsException();
+		}
+		
+		// make sure EBS is actually attached
+		if (VolumeState.fromValue(tenantEbs.getState()) != VolumeState.InUse) {
+			// no error needed, just stop
+			return;
+		}
+		
+		DetachVolumeRequest request = new DetachVolumeRequest();
+		request.setVolumeId(tenantEbs.getVolumeId());
+		
+		ec2Client.detachVolume(request);
 	}
 
 	public void startNode(String instanceType) throws InvalidInstanceTypeException, FailedLaunchException {		
@@ -563,6 +641,14 @@ public class ManageCluster {
 	
 	public class MissingSshConfigFileException extends Exception {
 		public MissingSshConfigFileException(String string) {
+			super(string);
+		}
+	}
+	
+	public class MissingTenantEbsException extends Exception {}
+	
+	public class TenantEbsUnavailableException extends Exception {
+		public TenantEbsUnavailableException(String string) {
 			super(string);
 		}
 	}

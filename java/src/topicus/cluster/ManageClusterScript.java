@@ -15,7 +15,10 @@ import com.amazonaws.services.ec2.model.Instance;
 
 import topicus.ConsoleScript;
 import topicus.cluster.ManageCluster.InvalidCredentialsFileException;
+import topicus.cluster.ManageCluster.InvalidNodeIdException;
 import topicus.cluster.ManageCluster.MissingSshConfigFileException;
+import topicus.cluster.ManageCluster.MissingTenantEbsException;
+import topicus.cluster.ManageCluster.TenantEbsUnavailableException;
 
 public class ManageClusterScript extends ConsoleScript {
 	protected String awsCredentialsFile;
@@ -60,11 +63,62 @@ public class ManageClusterScript extends ConsoleScript {
 			this.runGUI();
 		} else if (action.equals("setup-ssh")) {
 			this.setupSsh();
+		} else if (action.equals("attach-tenant-ebs")) {
+			this.attachTenantEbs();
+		} else if (action.equals("detach-tenant-ebs")) {
+			this.detachTenantEbs();
 		} else {
 			throw new InvalidActionException("The specified action `" + action + "` is not a valid action");
 		}
 		
 		this.printLine("Successfully finished!");
+	}
+	
+	protected void attachTenantEbs () throws CancelledException, InvalidNodeSpecifiedException, 
+		MissingTenantEbsException, TenantEbsUnavailableException {
+		if (!this.cliArgs.hasOption("start")) {
+			if (!this.confirmBoolean("Are you sure you want to attach tenant data EBS? (y/n)")) {
+				throw new CancelledException("Cancelled by user");
+			}
+		}
+		
+		int nodeId = Integer.parseInt(cliArgs.getOptionValue("node", "0"));
+		if (nodeId < 1) {
+			throw new InvalidNodeSpecifiedException("Invalid node ID specified");
+		}
+		
+		// check if node is running
+		if (!manageCluster.isNodeRunning(nodeId)) {
+			throw new InvalidNodeSpecifiedException("Node #" + nodeId + " is not running");
+		}
+		
+		
+		printLine("Attaching tenant data EBS to node #" + nodeId);
+		try {
+			manageCluster.attachTenantEbs(nodeId);
+			printLine("Tenant EBS has been attached!");
+			printLine("Use `mount /dev/xvdf /tenant-data` to mount volume in instance");
+		} catch (InvalidNodeIdException e) {
+			throw new InvalidNodeSpecifiedException("Node #" + nodeId + " is not running");
+		}	
+	}
+	
+	protected void detachTenantEbs () throws CancelledException, MissingTenantEbsException {
+		if (!this.cliArgs.hasOption("start")) {
+			if (!this.confirmBoolean("Are you sure you want to dettach tenant data EBS? (y/n)")) {
+				throw new CancelledException("Cancelled by user");
+			}
+		}
+		
+		printLine("Dettaching tenant data EBS");
+
+		
+		try {
+			manageCluster.detachTenantEbs();
+			printLine("Tenant EBS has been detached!");
+		} catch (MissingTenantEbsException e) {
+			throw e;
+		}
 	}
 	
 	protected void setupSsh () throws CancelledException, IOException, MissingSshConfigFileException {
