@@ -23,7 +23,7 @@ public class BenchmarkInstanceScript extends ConsoleScript {
 	public static final int NR_OF_RUNS = 4;
 	
 	protected int maxPrime = 20000;
-	protected int memorySize = 100;
+	protected int memorySize = 20;
 	protected String fileSize = "10G";
 	protected int maxOltpRequests = 50000;
 	

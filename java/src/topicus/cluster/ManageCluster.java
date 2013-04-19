@@ -481,8 +481,8 @@ public class ManageCluster {
 			block1.setVirtualName("ephemeral2");
 			
 			BlockDeviceMapping block2 = new BlockDeviceMapping();
-			block2.setDeviceName("/dev/sd3");
-			block2.setVirtualName("ephemerale");
+			block2.setDeviceName("/dev/sde");
+			block2.setVirtualName("ephemeral3");
 			
 			blockList.add(block1);		
 			blockList.add(block2);
