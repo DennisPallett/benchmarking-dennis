@@ -214,7 +214,7 @@ public class ManageCluster {
 			sshConf = sshConf.substring(0, beginPos + "Host *".length())
 					+ "\n"
 					+ toAdd
-					+ sshConf.substring(beginPos);
+					+ sshConf.substring(beginPos + "Host *".length());
 		}
 								
 		// write new ssh config file
@@ -255,8 +255,6 @@ public class ManageCluster {
 			
 			String hostName = ret.substring(0, sepPos).trim();
 			String hostKey = ret.substring(sepPos).trim();
-			System.out.println(hostName + ":");
-			System.out.println(hostKey);
 			keyList.put(hostName, hostKey);
 		}		
 		

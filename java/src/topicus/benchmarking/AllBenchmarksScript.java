@@ -279,10 +279,12 @@ public class AllBenchmarksScript extends DatabaseScript {
 		}
 		
 		if (finished) {
-			// upload results to S3
-			printLine("Uploading results to S3");
-			s3.putObject(this.bucketName, fileName, new File(this.outputDirectory + fileName + ".csv"));
-			printLine("Upload finished");
+			if (bucketName.length() > 0) {
+				// upload results to S3
+				printLine("Uploading results to S3");
+				s3.putObject(this.bucketName, fileName, new File(this.outputDirectory + fileName + ".csv"));
+				printLine("Upload finished");
+			}
 			
 			printLine("Benchmark finished");
 		}
@@ -334,9 +336,11 @@ public class AllBenchmarksScript extends DatabaseScript {
 			RunLoadTenant.main( args.toArray(new String[args.size()]) );
 			
 			// upload results to S3
-			printLine("Uploading results to S3");
-			s3.putObject(this.bucketName, fileName, new File(this.outputDirectory + fileName + ".csv"));
-			printLine("Upload finished");
+			if (this.bucketName.length() > 0) {
+				printLine("Uploading results to S3");
+				s3.putObject(this.bucketName, fileName, new File(this.outputDirectory + fileName + ".csv"));
+				printLine("Upload finished");
+			}
 		} catch (LoadTenantScript.OverwriteException e) {
 			// no problemo!
 		} catch (AlreadyDeployedException e) {

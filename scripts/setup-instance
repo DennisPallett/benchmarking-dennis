@@ -48,4 +48,7 @@ source ~/.profile
 # copy host key to root directory so that root node-to-node is immediately enabled
 cp /etc/ssh/ssh_host_rsa_key ~/
 
+# update hostname permanently
+echo `hostname` > /etc/hostname
+
 printf "\n\nAll OK! Instance is fully setup!\n\n"

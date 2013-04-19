@@ -24,7 +24,6 @@ import au.com.bytecode.opencsv.CSVReader;
 import topicus.ConsoleScript;
 
 public class ProcessResultsScript extends ConsoleScript {
-	class InvalidResultsDirectoryException extends Exception {}
 	class InvalidDataDirectoryException extends Exception {}
 	class InvalidTenantIdException extends Exception {}
 	class CancelledException extends Exception {}
@@ -49,8 +48,8 @@ public class ProcessResultsScript extends ConsoleScript {
 		File resDir = new File(this.resultsDirectory);
 		this.printLine("Found " + resDir.listFiles().length + " files in directory");
 		
-		Pattern pBenchmark = Pattern.compile("^benchmark-(.*)-(\\d+)-nodes-(\\d+)-tenants-(\\d+)-users-(\\d+)-iterations$");
-		Pattern pLoad = Pattern.compile("^load-(.*)-(\\d+)-nodes-tenant-(\\d+)$");
+		Pattern pBenchmark = Pattern.compile("^benchmark-(.*)-(\\d+)-nodes-(\\d+)-tenants-(\\d+)-users-(\\d+)-iterations(\\.csv)?$");
+		Pattern pLoad = Pattern.compile("^load-(.*)-(\\d+)-nodes-tenant-(\\d+)(\\.csv)?$");
 		
 		for(File file : resDir.listFiles()) {
 			String fileName = file.getName();
@@ -150,14 +149,16 @@ public class ProcessResultsScript extends ConsoleScript {
 		
 		int resultCount = 0;
 		for (String[] row : rows) {
-			String table = row[0];
-			int rowCount = Integer.parseInt(row[1]);
-			int execTime = Integer.parseInt(row[2]);
-						
-			q.setInt(1,  loadId);
-			q.setString(2,  table);
-			q.setInt(3,  rowCount);
-			q.setInt(4,  execTime);
+			if (row.length > 1) {
+				String table = row[0];
+				int rowCount = Integer.parseInt(row[1]);
+				int execTime = Integer.parseInt(row[2]);
+							
+				q.setInt(1,  loadId);
+				q.setString(2,  table);
+				q.setInt(3,  rowCount);
+				q.setInt(4,  execTime);
+			}
 						
 			q.execute();	
 			resultCount++;
@@ -237,27 +238,29 @@ public class ProcessResultsScript extends ConsoleScript {
 		
 		int rowCount = 0;
 		for (String[] row : rows) {
-			int userId = Integer.parseInt(row[0]);
-			int iteration = Integer.parseInt(row[1]);
-			int setId = Integer.parseInt(row[2]);
-			int query1_time = Integer.parseInt(row[3]);
-			int query2_time = Integer.parseInt(row[4]);
-			int query3_time = Integer.parseInt(row[5]);
-			int query4_time = Integer.parseInt(row[6]);
-			int set_time = Integer.parseInt(row[7]);
-			
-			q.setInt(1,  benchmarkId);
-			q.setInt(2,  userId);
-			q.setInt(3,  iteration);
-			q.setInt(4,  setId);
-			q.setInt(5,  query1_time);
-			q.setInt(6,  query2_time);
-			q.setInt(7,  query3_time);
-			q.setInt(8,  query4_time);
-			q.setInt(9,  set_time);
-			
-			q.execute();	
-			rowCount++;
+			if (row.length > 1) {
+				int userId = Integer.parseInt(row[0]);
+				int iteration = Integer.parseInt(row[1]);
+				int setId = Integer.parseInt(row[2]);
+				int query1_time = Integer.parseInt(row[3]);
+				int query2_time = Integer.parseInt(row[4]);
+				int query3_time = Integer.parseInt(row[5]);
+				int query4_time = Integer.parseInt(row[6]);
+				int set_time = Integer.parseInt(row[7]);
+				
+				q.setInt(1,  benchmarkId);
+				q.setInt(2,  userId);
+				q.setInt(3,  iteration);
+				q.setInt(4,  setId);
+				q.setInt(5,  query1_time);
+				q.setInt(6,  query2_time);
+				q.setInt(7,  query3_time);
+				q.setInt(8,  query4_time);
+				q.setInt(9,  set_time);
+				
+				q.execute();	
+				rowCount++;
+			}
 		}		
 		
 		this.printLine("Inserted " + rowCount + " results");
@@ -267,13 +270,13 @@ public class ProcessResultsScript extends ConsoleScript {
 		// results directory
 		this.resultsDirectory = cliArgs.getOptionValue("results-directory", "");
 		File resultsDir = new File(this.resultsDirectory, "");
-		if (resultsDir.exists() == false || resultsDir.isFile()) {
-			throw new InvalidResultsDirectoryException();
+		if (resultsDir.length() == 0 || resultsDir.exists() == false || resultsDir.isFile()) {
+			throw new InvalidResultsDirectoryException("Specify the directory that contains the reuslts with --results-directory");
 		}
 		this.resultsDirectory = resultsDir.getAbsolutePath() + "/";
 		this.printLine("Results directory: " + this.resultsDirectory);
 		
-		String dbUser = cliArgs.getOptionValue("user", "");
+		String dbUser = cliArgs.getOptionValue("user", "root");		
 		String dbPassword = cliArgs.getOptionValue("password", "");
 		String dbName = cliArgs.getOptionValue("database", "benchmarking_results");
 		String dbHost = cliArgs.getOptionValue("host", "localhost");
@@ -312,6 +315,12 @@ public class ProcessResultsScript extends ConsoleScript {
 	
 	public class InvalidTypeException extends Exception {
 		public InvalidTypeException(String string) {
+			super(string);
+		}
+	}
+	
+	public class InvalidResultsDirectoryException extends Exception {
+		public InvalidResultsDirectoryException(String string) {
 			super(string);
 		}
 	}

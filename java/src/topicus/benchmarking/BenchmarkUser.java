@@ -143,7 +143,11 @@ public class BenchmarkUser extends Thread {
 				setTime
 			);
 								
-			setNum++;			
+			setNum++;
+			
+			// rate limiting
+			// to avoid flooding the database
+			Thread.sleep(100);
 		}
 	}
 	

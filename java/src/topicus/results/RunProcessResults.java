@@ -15,7 +15,6 @@ public class RunProcessResults extends RunConsoleScript {
 		options.addOption(
 				OptionBuilder
 				.hasArg()
-				.isRequired()
 				.withDescription("Specify the directory where the result files are located")
 				.withLongOpt("results-directory")
 				.create()
@@ -24,7 +23,6 @@ public class RunProcessResults extends RunConsoleScript {
 		options.addOption(
 				OptionBuilder
 				.hasArg()
-				.isRequired()
 				.withDescription("Specify the MySQL user")
 				.withLongOpt("user")
 				.create("u")
