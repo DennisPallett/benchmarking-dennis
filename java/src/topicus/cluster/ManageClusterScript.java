@@ -3,6 +3,7 @@ package topicus.cluster;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
@@ -86,11 +87,7 @@ public class ManageClusterScript extends ConsoleScript {
 		if (server == null) {		
 			printLine("Server: not running");
 		} else {
-			printLine("Server: "
-					+ "\t" + server.getState().getName()
-					+ "\t" + server.getPublicDnsName()
-					+ "\t" + server.getInstanceType()
-					+ "\t" + server.getLaunchTime());
+			printInstanceInfo("Server", server);
 		}
 		
 		printLine("==================");
@@ -103,15 +100,25 @@ public class ManageClusterScript extends ConsoleScript {
 			for(Map.Entry<String, Instance> entry : nodes.entrySet()) {
 				String nodeName = entry.getKey();
 				Instance nodeInstance = entry.getValue();
-				
-				printLine("- " + nodeName + ": "
-						+ "\t" + nodeInstance.getState().getName()
-						+ "\t" + nodeInstance.getPublicDnsName()
-						+ "\t" + nodeInstance.getInstanceType()
-						+ "\t" + nodeInstance.getLaunchTime());
+				printInstanceInfo(nodeName, nodeInstance);				
 			}
 		}		
 		printLine("===================================");		
+	}
+	
+	protected void printInstanceInfo(String name, Instance instance) {
+		// calculate how many instance hours have been used
+		Date dateNow = new Date();
+		double diff = dateNow.getTime() - instance.getLaunchTime().getTime();
+		double upHours = Math.ceil(((diff / 1000) / 60) / 60);
+		
+		printLine("- " + name + ": "
+				+ "\t" + instance.getState().getName()
+				+ "\t" + instance.getPublicDnsName()
+				+ "\t" + instance.getInstanceType()
+				+ "\t" + instance.getLaunchTime()
+				+ "\t" + upHours + " hours");
+		
 	}
 	
 	protected void stopNode () throws Exception {

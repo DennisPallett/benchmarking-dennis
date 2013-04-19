@@ -99,7 +99,10 @@
 		
 		<echo message="Executable: generate-tenant" />
 		<echo file="build/generate-tenant.bat">java -Xmx4048M -cp scripts.jar topicus.data.RunGenerateTenant %*</echo>
-		<echo file="build/generate-tenant">java -Xmx4048M -cp scripts.jar topicus.data.RunGenerateTenant "$@"</echo>
+		<echo file="build/generate-tenant">
+			DIR="$( cd "$( dirname "$0" )" &amp;&amp; pwd )"
+			java -Xmx4048M -cp "$DIR/scripts.jar" topicus.data.RunGenerateTenant "$@"
+		</echo>
 	</target>
 			
     <target name="build-subprojects"/>

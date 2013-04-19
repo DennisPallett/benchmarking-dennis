@@ -17,6 +17,9 @@ apt-get install openjdk-7-jdk -y
 # install unzip
 apt-get install unzip -y
 
+# install 7zip tool
+apt-get install p7zip-full
+
 # install ant
 apt-get install ant -y
 

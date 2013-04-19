@@ -39,6 +39,7 @@ import com.amazonaws.services.ec2.model.DescribeInstancesResult;
 import com.amazonaws.services.ec2.model.EbsBlockDevice;
 import com.amazonaws.services.ec2.model.Filter;
 import com.amazonaws.services.ec2.model.Instance;
+import com.amazonaws.services.ec2.model.Placement;
 import com.amazonaws.services.ec2.model.Reservation;
 import com.amazonaws.services.ec2.model.RunInstancesRequest;
 import com.amazonaws.services.ec2.model.RunInstancesResult;
@@ -418,6 +419,9 @@ public class ManageCluster {
 	protected void _launchInstance(String instanceType, String name) throws FailedLaunchException {
 		// start new run request
 		RunInstancesRequest request = new RunInstancesRequest();
+		
+		// set Availability Zone of new instance
+		request.setPlacement(new Placement("eu-west-1a"));
 		
 		// launch exactly 1 instance
 		request.withMaxCount(1);
