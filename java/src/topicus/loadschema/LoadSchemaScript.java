@@ -197,7 +197,7 @@ public class LoadSchemaScript extends DatabaseScript {
 				.setAllowNull()
 			);
 		
-		this.database.createTable(this.conn, tableName, cols, "tenant_key");		
+		this.database.createTable(this.conn, tableName, cols, "year_key");		
 		this.printLine("Table deployed");		
 	}
 	
