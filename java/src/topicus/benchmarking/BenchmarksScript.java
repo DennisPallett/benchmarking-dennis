@@ -118,21 +118,7 @@ public class BenchmarksScript extends DatabaseScript {
 		// get information about current system setup
 		this._getDatabaseInfo();
 		
-		if (this.tenantCount < this.numberOfUsers) {
-			this.printError("Not enough tenants in database for number of concurrent users");
-			throw new InvalidNumberOfTenantsException();
-		}
 		
-		if (this.tenantCount != this.numberOfTenants) {
-			this.printError("Number of tenants (" + this.tenantCount + ") in database does not " +
-					"equal specified number of tenants (" + this.numberOfTenants + ")");
-			throw new InvalidNumberOfTenantsException();
-		}
-		
-		if (this.nodeCount != this.nodes) {
-			this.printError("Number of online nodes (" + this.nodeCount + ") does not equal specified number of nodes (" + this.nodes + ")");
-			throw new InvalidNumberOfNodesException();
-		}	
 		
 		this.outputFile = cliArgs.getOptionValue("results-file", "");
 		if (this.outputFile.length() == 0) {
@@ -154,6 +140,22 @@ public class BenchmarksScript extends DatabaseScript {
 		}
 		
 		printLine("Writing results to: " + this.outputFile);
+		
+		if (this.tenantCount < this.numberOfUsers) {
+			this.printError("Not enough tenants in database for number of concurrent users");
+			throw new InvalidNumberOfTenantsException();
+		}
+		
+		if (this.tenantCount != this.numberOfTenants) {
+			this.printError("Number of tenants (" + this.tenantCount + ") in database does not " +
+					"equal specified number of tenants (" + this.numberOfTenants + ")");
+			throw new InvalidNumberOfTenantsException();
+		}
+		
+		if (this.nodeCount != this.nodes) {
+			this.printError("Number of online nodes (" + this.nodeCount + ") does not equal specified number of nodes (" + this.nodes + ")");
+			throw new InvalidNumberOfNodesException();
+		}	
 		
 		this.resOut = new CSVWriter(new FileWriter(this.outputFile, true), '\t', CSVWriter.NO_QUOTE_CHARACTER);
 		
