@@ -37,6 +37,10 @@ public abstract class ConsoleScript {
 	public void printLine(int msg) {
 		printLine(String.valueOf(msg));
 	}
+	
+	public void printLine(float msg) {
+		printLine(String.valueOf(msg));
+	}
 		
 	public String exec (Process proc) throws IOException {
 		StringBuilder ret = new StringBuilder();

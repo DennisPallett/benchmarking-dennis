@@ -9,6 +9,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -34,6 +35,8 @@ public class ProcessResultsScript extends ConsoleScript {
 	
 	protected boolean doOverwrite = false;
 	
+	protected int[] instanceBenchmarks = new int[100];
+	
 	public void run () throws Exception {
 		printLine("Started-up resutls processing tool");	
 				
@@ -50,10 +53,29 @@ public class ProcessResultsScript extends ConsoleScript {
 		File resDir = new File(this.resultsDirectory);
 		this.printLine("Found " + resDir.listFiles().length + " files in directory");
 		
+		Pattern pInstance = Pattern.compile("^benchmark-node(\\d+)-(.*).dat$");
 		Pattern pBenchmark = Pattern.compile("^benchmark-(.*)-(\\d+)-nodes-(\\d+)-tenants-(\\d+)-users-(\\d+)-iterations(\\.csv)?$");
 		Pattern pLoad = Pattern.compile("^load-(.*)-(\\d+)-nodes-tenant-(\\d+)(\\.csv)?$");
 		
-		for(File file : resDir.listFiles()) {
+		File[] files = resDir.listFiles();
+		
+		printLine("Scanning directory for instance benchmark files");
+		int instanceCount = 0;
+		for (File file : files) {
+			String fileName = file.getName();
+			Matcher mInstance = pInstance.matcher(fileName);
+			if (mInstance.find()) {
+				this._parseInstanceFile(
+					file,
+					Integer.parseInt(mInstance.group(1)),
+					mInstance.group(2)
+				);				
+				instanceCount++;
+			}		
+		}
+		printLine("Found & parsed " + instanceCount + " instance benchmark files");
+		
+		for(File file : files) {
 			String fileName = file.getName();
 			
 			Matcher mBenchmark = pBenchmark.matcher(fileName);			
@@ -82,6 +104,113 @@ public class ProcessResultsScript extends ConsoleScript {
 			
 		this.printLine("Successfully finished!");
 		conn.close();
+	}
+	
+	protected void _parseInstanceFile(File file, int nodeId, String dateTime) throws IOException, SQLException {
+		printLine("Found instance benchmarks for node " + nodeId + " on " + dateTime);
+		
+		// fix date time
+		String[] split = dateTime.split("\\.");
+		if (split.length != 5) {
+			printError("Invalid date/time value: " + dateTime);
+			return;
+		}
+		
+		dateTime = split[2] + "-" + split[1] + "-" + split[0] + " " + split[3] + ":" + split[4];
+				
+		// parse file
+		String data = FileUtils.readFileToString(file);
+		
+		Pattern pattern = Pattern.compile("===(.*?)-(\\d+)===(.*?)======", Pattern.DOTALL);
+		Matcher matcher = pattern.matcher(data);
+		
+		Pattern timePattern = Pattern.compile("total time:(.*)s$", Pattern.MULTILINE);
+		
+		HashMap<String, List<Float>> times = new HashMap<String, List<Float>>();
+		times.put("cpu",  new ArrayList<Float>());
+		times.put("memory",  new ArrayList<Float>());
+		times.put("file",  new ArrayList<Float>());
+		times.put("oltp",  new ArrayList<Float>());
+	
+		while (matcher.find()) {
+			String type = matcher.group(1).toLowerCase();
+			String test = matcher.group(3).toLowerCase();
+			
+			Matcher mTime = timePattern.matcher(test);
+
+			if (mTime.find()) {
+				float time = Float.parseFloat(mTime.group(1));
+				times.get(type).add(time);
+			}			
+		}
+		
+		// calculate averages
+		HashMap<String, Double> averages = new HashMap<String, Double>();
+		for (String key : times.keySet()) {
+			float timeTotal = 0;
+			for (float time : times.get(key)) {
+				timeTotal += time;				
+			}
+			
+			double avg = timeTotal / times.get(key).size();
+			averages.put(key,  avg);
+		}
+				
+		
+		PreparedStatement q;
+		ResultSet result;
+		
+		// check if this file already has results stored
+		q = conn.prepareStatement("SELECT * FROM `instance` " +
+				"WHERE instance_node = ? AND instance_datetime = ?");
+		q.setInt(1,  nodeId);
+		q.setString(2, dateTime);
+		
+		q.execute();
+		result = q.getResultSet();
+		boolean exists = result.next();
+		
+		int existingId = -1;
+		if (exists) {
+			existingId = result.getInt("instance_id");
+		}
+		
+		result.close();
+		q.close();
+		
+		if (exists) {
+			// already exists, ask to delete old results
+			this.printError("There are already results stored for this instance!");
+			if (doOverwrite || confirmBoolean("Delete old results from database? (y/n)")) {
+				q = conn.prepareStatement("DELETE FROM `instance` WHERE instance_id = ?");
+				q.setInt(1, existingId);
+				q.execute();
+				this.printLine("Old results deleted!");
+			} else {
+				// don't overwrite
+				this.printError("Skipping file");
+				this.instanceBenchmarks[nodeId] = existingId;
+				return;
+			}
+		}	
+		
+		// insert benchmark
+		q = conn.prepareStatement("INSERT INTO `instance` (instance_node, instance_datetime, instance_cpu, " +
+				"instance_memory, instance_fileio, instance_oltp) " +
+				" VALUES (?, ?, ?, ?, ?, ?)", Statement.RETURN_GENERATED_KEYS);
+		q.setInt(1, nodeId);
+		q.setString(2, dateTime);
+		q.setDouble(3, averages.get("cpu"));
+		q.setDouble(4, averages.get("memory"));
+		q.setDouble(5, averages.get("file"));
+		q.setDouble(6, averages.get("oltp"));
+		q.executeUpdate();
+		
+		ResultSet keys = q.getGeneratedKeys();
+		keys.next();
+		
+		this.instanceBenchmarks[nodeId] = keys.getInt(1);
+		printLine("Saved instance benchmarks for node " + nodeId);
 	}
 	
 	protected void _parseLoadFile (File file, String type, int nodes, int tenantId) throws Exception {
@@ -142,6 +271,17 @@ public class ProcessResultsScript extends ConsoleScript {
 		
 		int loadId = keys.getInt(1);
 		
+		// insert connection with instances
+		for(int node=1; node <= nodes; node++) {
+			int instanceId = this.instanceBenchmarks[node];
+			if (instanceId > 0) {
+				q = conn.prepareStatement("INSERT INTO load_instance (`load`, instance) VALUES (?, ?)");
+				q.setInt(1,  loadId);
+				q.setInt(2, instanceId);
+				q.executeUpdate();
+			}
+		}
+		
 		this.printLine("Parsing file...");
 		
 		CSVReader reader = new CSVReader(new FileReader(file), '\t');
@@ -165,6 +305,8 @@ public class ProcessResultsScript extends ConsoleScript {
 			q.execute();	
 			resultCount++;
 		}		
+		
+		
 		
 		this.printLine("Inserted " + resultCount + " results");
 	}
@@ -229,6 +371,17 @@ public class ProcessResultsScript extends ConsoleScript {
 		keys.next();
 		
 		int benchmarkId = keys.getInt(1);
+		
+		// insert connection with instances
+		for(int node=1; node <= nodes; node++) {
+			int instanceId = this.instanceBenchmarks[node];
+			if (instanceId > 0) {
+				q = conn.prepareStatement("INSERT INTO benchmark_instance (`benchmark`, instance) VALUES (?, ?)");
+				q.setInt(1,  benchmarkId);
+				q.setInt(2, instanceId);
+				q.executeUpdate();
+			}
+		}
 		
 		this.printLine("Parsing file...");
 		
