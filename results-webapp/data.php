@@ -17,6 +17,7 @@ class DashboardsApplication {
 		$this->addDashboard('results-overview', new ResultsOverviewDashboard());
 		$this->addDashboard('tenant-graph', new TenantGraphDashboard());
 		$this->addDashboard('loadtimes-per-tenant', new LoadtimesPerTenantDashboard());
+		$this->addDashboard('scalability-score-table', new ScalabilityScoreTableDashboard());
 
 		$this->addOption('users', '1', 'ctype_digit');
 		$this->addOption('tenants', '1', 'ctype_digit');
@@ -160,15 +161,16 @@ abstract class Dashboard {
 		return (isset($_GET[$key])) ? $_GET[$key] : $default;
 	}
 
+	protected function _calculateInstanceScore ($cpuTime, $memoryTime, $fileTime, $oltpTime) {
+		// just use OLTP as instance score
+		return $oltpTime;
+	}
+
 	abstract function loadData();
 }
 
 class ResultsOverviewDashboard extends Dashboard {
 	
-	public function addOptions () {
-		$this->app->addOption('up_to_tenants', 100, 'ctype_digit');
-	}
-
 	public function loadData() {
 		$q = $this->db->prepare("
 			SELECT * FROM benchmark
@@ -201,6 +203,10 @@ class ResultsOverviewDashboard extends Dashboard {
 }
 
 class TenantGraphDashboard extends Dashboard {
+
+	public function addOptions () {
+		$this->app->addOption('up_to_tenants', 100, 'ctype_digit');
+	}
 
 	public function loadData () {
 		$q = $this->db->prepare("
@@ -265,6 +271,142 @@ class LoadTimesPerTenantDashboard extends Dashboard {
 
 		return $ret;
 	}
+}
+
+class ScalabilityScoreTableDashboard extends Dashboard {
+	
+	public function loadData() {
+		$q = $this->db->prepare("
+			SELECT * FROM benchmark
+			WHERE benchmark_product = :product
+		");
+
+		$q->bindValue(':product', $this->getProductId());
+		$q->execute();
+
+		$results = $q->fetchAll(PDO::FETCH_ASSOC);
+
+		$ret = array();
+		
+		// get actual results from database
+		$benchmarkIds = array(0);
+		foreach($results as $row) {
+			$benchmarkIds[] = $row['benchmark_id'];
+
+			$key = $row['benchmark_tenants'] . '-' . $row['benchmark_users'] . '-' . $row['benchmark_nodes'];
+			$tenants = $row['benchmark_tenants'];
+			$users = $row['benchmark_users'];
+			$nodes = $row['benchmark_nodes'];
+
+			$ret[$tenants][$users][$nodes]['actual'] = array(
+				'avg_querytime' => $row['benchmark_avg_querytime'],
+				'avg_settime'	=> $row['benchmark_avg_settime']
+			);
+
+		}
+
+		// get instances related to benchmarks
+		$q = $this->db->prepare("
+			SELECT * FROM instance
+			INNER JOIN benchmark_instance ON instance_id = instance
+			WHERE benchmark IN (" . implode(',', $benchmarkIds) . ")
+			GROUP BY instance_id
+		");
+
+		$q->execute();
+		$results = $q->fetchAll();
+
+		$instances = array();
+		foreach($results as $row) {
+			$row['score'] = $this->_calculateInstanceScore($row['instance_cpu'], $row['instance_memory'], $row['instance_fileio'], $row['instance_oltp']);
+			$node = $row['instance_node'];
+
+			$instances[$node] = $row;
+		}
+
+		// calculate expected results
+		$globalQueryScoreList = array();
+		$globalSetScoreList = array();
+		foreach($ret as $tenant => $users) {
+			foreach($users as $user => $nodes) {
+				$benchmarkQueryScoreList = array();
+				$benchmarkSetScoreList = array();
+
+				foreach($nodes as $node => $row) {
+					$querytime = 0;
+					$settime = 0;
+
+					$prevNodeId = $node - 1;
+					if (isset($ret[$tenant][$user][$prevNodeId])) {
+						// fetch values of previous node
+						$prevNode = $ret[$tenant][$user][$prevNodeId];
+						$prevQueryTime = $prevNode['actual']['avg_querytime'];
+						$prevSetTime = $prevNode['actual']['avg_settime'];
+
+						// calculated expected values
+						$querytime = $prevQueryTime * ($prevNodeId / $node);
+						$settime = $prevSetTime * ($prevNodeId / $node);
+					}
+
+					$ret[$tenant][$user][$node]['expected'] = array(
+						'avg_querytime'	=> $querytime,
+						'avg_settime'	=> $settime
+					);
+
+					// calculate scalability scores for this node
+					$queryScore = $querytime / $ret[$tenant][$user][$node]['actual']['avg_querytime'];
+					$setScore = $settime / $ret[$tenant][$user][$node]['actual']['avg_settime'];
+
+					$ret[$tenant][$user][$node]['query_score'] = $queryScore;
+					$ret[$tenant][$user][$node]['set_score'] = $setScore;
+
+					if ($queryScore > 0 && $setScore > 0) {
+						$benchmarkQueryScoreList[] = $queryScore;
+						$benchmarkSetScoreList[] = $setScore;
+					}
+				}
+
+				// calculate scores for this benchmark (average of all nodes)
+				$benchmarkQueryScore = 0;
+				if (count($benchmarkQueryScoreList) > 0) {
+					$benchmarkQueryScore = array_sum($benchmarkQueryScoreList) / count($benchmarkQueryScoreList);
+				}
+				$benchmarkSetScore = 0;
+				if (count($benchmarkSetScoreList) > 0) {
+					$benchmarkSetScore = array_sum($benchmarkSetScoreList) / count($benchmarkSetScoreList);
+				}
+
+				if ($benchmarkQueryScore > 0) {
+					$globalQueryScoreList[] = $benchmarkQueryScore;
+				}
+
+				if ($benchmarkSetScore > 0) {
+					$globalSetScoreList[] = $benchmarkSetScore;
+				}				
+
+				$ret[$tenant][$user]['query_score'] = $benchmarkQueryScore;
+				$ret[$tenant][$user]['set_score'] = $benchmarkSetScore;
+			}
+		}
+
+		// calculate global scalability scores for this product
+		$globalQueryScore = 0;
+		if (count($globalQueryScoreList) > 0) {
+			$globalQueryScore = array_sum($globalQueryScoreList) / count($globalQueryScoreList);
+		}
+
+
+		$globalSetScore = 0;
+		if (count($globalSetScoreList) > 0) {
+			$globalSetScore = array_sum($globalSetScoreList) / count($globalSetScoreList);
+		}
+
+		$ret['query_score'] = $globalQueryScore;
+		$ret['set_score'] = $globalSetScore;
+
+		return $ret;
+	}
+
 }
 
 

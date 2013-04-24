@@ -134,17 +134,18 @@ public class LoadSchemaScript extends DatabaseScript {
 		cols.add(
 				new DbColumn("month_key")
 				.setType(DbColumn.Type.INTEGER)
+				.setForeignKey("month_names", "month")
 			);
 		
 		cols.add(
 				new DbColumn("project_key")
 				.setType(DbColumn.Type.INTEGER)
-				.setForeignKey("dim_grootboek", "grootboek_key")
 			);
 		
 		cols.add(
 				new DbColumn("grootboek_key")
 				.setType(DbColumn.Type.INTEGER)
+				.setForeignKey("dim_grootboek", "grootboek_key")
 			);
 		
 		cols.add(

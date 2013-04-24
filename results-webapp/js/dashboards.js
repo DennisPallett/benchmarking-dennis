@@ -20,7 +20,8 @@ var DashboardApp = new Class({
 		this.dashboards = [
 			new ResultsOverviewDashboard(),
 			new TenantGraphDashboard(),
-			new LoadTimesPerTenantDashboard()
+			new LoadTimesPerTenantDashboard(),
+			new ScalabilityScoreTableDashboard()
 
 			/*,
 			["Scalability", [
