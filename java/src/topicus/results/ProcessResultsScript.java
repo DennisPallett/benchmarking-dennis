@@ -32,6 +32,8 @@ public class ProcessResultsScript extends ConsoleScript {
 	
 	protected Connection conn;
 	
+	protected boolean doOverwrite = false;
+	
 	public void run () throws Exception {
 		printLine("Started-up resutls processing tool");	
 				
@@ -115,7 +117,7 @@ public class ProcessResultsScript extends ConsoleScript {
 		if (exists) {
 			// already exists, ask to delete old results
 			this.printError("There are already results stored for this load!");
-			if (confirmBoolean("Delete old results from database? (y/n)")) {
+			if (doOverwrite || confirmBoolean("Delete old results from database? (y/n)")) {
 				q = conn.prepareStatement("DELETE FROM `load` WHERE load_id = ?");
 				q.setInt(1, existingId);
 				q.execute();
@@ -201,7 +203,7 @@ public class ProcessResultsScript extends ConsoleScript {
 		if (exists) {
 			// already exists, ask to delete old results
 			this.printError("There are already results stored for this benchmark!");
-			if (confirmBoolean("Delete old results from database? (y/n)")) {
+			if (doOverwrite || confirmBoolean("Delete old results from database? (y/n)")) {
 				q = conn.prepareStatement("DELETE FROM benchmark WHERE benchmark_id = ?");
 				q.setInt(1, existingId);
 				q.execute();
@@ -237,6 +239,10 @@ public class ProcessResultsScript extends ConsoleScript {
 				"query3_time, query4_time, set_time) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
 		
 		int rowCount = 0;
+		int queryCount = 0;
+		int setCount = 0;
+		int queryTotal = 0;
+		int setTotal = 0;
 		for (String[] row : rows) {
 			if (row.length > 1) {
 				int userId = Integer.parseInt(row[0]);
@@ -247,6 +253,28 @@ public class ProcessResultsScript extends ConsoleScript {
 				int query3_time = Integer.parseInt(row[5]);
 				int query4_time = Integer.parseInt(row[6]);
 				int set_time = Integer.parseInt(row[7]);
+				
+				if (query1_time > 0) {
+					queryCount++;
+					queryTotal += query1_time;
+				}
+				if (query2_time > 0) {
+					queryCount++;
+					queryTotal += query2_time;
+				}
+				if (query3_time > 0) {
+					queryCount++;
+					queryTotal += query3_time;
+				}
+				if (query4_time > 0) {
+					queryCount++;
+					queryTotal += query4_time;
+				}
+				
+				if (set_time > 0) {
+					setCount++;
+					setTotal += set_time;
+				}
 				
 				q.setInt(1,  benchmarkId);
 				q.setInt(2,  userId);
@@ -261,7 +289,17 @@ public class ProcessResultsScript extends ConsoleScript {
 				q.execute();	
 				rowCount++;
 			}
-		}		
+		}	
+		
+		float queryAvg = queryTotal / queryCount;
+		float setAvg = setTotal / setCount;
+		
+		q = conn.prepareStatement("UPDATE benchmark SET benchmark_avg_querytime = ?, benchmark_avg_settime = ? " +
+				"WHERE benchmark_id = ?");
+		q.setFloat(1, queryAvg);
+		q.setFloat(2, setAvg);
+		q.setInt(3, benchmarkId);
+		q.executeUpdate();
 		
 		this.printLine("Inserted " + rowCount + " results");
 	}
@@ -275,6 +313,8 @@ public class ProcessResultsScript extends ConsoleScript {
 		}
 		this.resultsDirectory = resultsDir.getAbsolutePath() + "/";
 		this.printLine("Results directory: " + this.resultsDirectory);
+		
+		this.doOverwrite = cliArgs.hasOption("overwrite");
 		
 		String dbUser = cliArgs.getOptionValue("user", "root");		
 		String dbPassword = cliArgs.getOptionValue("password", "");

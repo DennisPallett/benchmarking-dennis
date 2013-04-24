@@ -51,6 +51,14 @@ public class RunProcessResults extends RunConsoleScript {
 				.withLongOpt("host")
 				.create("h")
 		);
+		
+		options.addOption(
+				OptionBuilder
+				.hasArg(false)
+				.withDescription("Enable automatic overwriting of old results in database")
+				.withLongOpt("overwrite")
+				.create()
+		);
 	}
 	
 	public void run (String[] args)  throws Exception {

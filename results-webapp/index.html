@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+	<head>
+		<title>Results Dashboards DWH Benchmarking Topicus I&amp;I</title>
+		<link rel="stylesheet" type="text/css" href="css/style.css" />
+
+		<script type="text/javascript" src="js/mootools-core-1.4.5-full-nocompat-yc.js"></script>
+		<script type="text/javascript" src="js/mootools-more-1.4.0.1.js"></script>
+		<script src="js/highcharts/adapters/mootools-adapter.js"></script>
+		<script src="js/highcharts/highcharts.js"></script>
+
+		<script type="text/javascript" src="js/dashboards.js"></script>
+		<script type="text/javascript" src="js/results-overview-dashboard.js"></script>
+		<script type="text/javascript" src="js/tenant-graph-dashboard.js"></script>
+		<script type="text/javascript" src="js/loadtimes-per-tenant-dashboard.js"></script>
+	</head>
+
+	<body>
+		<div id="topbar" class="blue_gradient">
+			<h1>Results Dashboards DWH Benchmarking Topicus I&amp;I<span id="subtitle"></span></h1>
+			
+			<div id="selector">
+				Select dashboard to view: 
+				<select></select>
+			</div>
+		</div>
+
+		<div id="dashboard_container">
+			<div id="select_dashboard"><p>Select a dashboard using the select box in the upper-right corner</p></div>
+
+			<div id="loading" style="display: none;"><p>Loading dashboard... <img src="images/ajax-loader.gif" style="vertical-align: middle;" /> </p></div>
+
+			<div id="options_container" style="display: none;">
+				<div id="options_title">Dashboard options:</div>
+				<form id="options">
+					<table cellspacing="0" style="margin: 0;">
+						
+					</table>
+
+					<input type="button" value="Save options &amp; reload dashboard" id="save-button" />
+				</form>
+			</div>
+
+			<div id="dashboard">
+
+			</div>
+		</div>
+
+		<div id="footer">
+			<span>Copyright &copy; 2013 Topicus I&amp;I - Created by Dennis Pallett</span>
+		</div>
+
+	</body>
+</html>
