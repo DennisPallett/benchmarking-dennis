@@ -13,8 +13,11 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
 
+import topicus.databases.AbstractDatabase;
+import topicus.databases.AbstractDatabase.TimeoutException;
+
 public class BenchmarkUser extends Thread {
-	protected Random random;
+	
 	
 	protected int userId;
 	protected List<Connection> conns = new ArrayList<Connection>();
@@ -23,8 +26,10 @@ public class BenchmarkUser extends Thread {
 	protected int iterations;
 	protected int nodes;
 	protected int numberOfUsers;
+	protected int numberOfTenants;
 		
 	protected BenchmarksScript owner;
+	protected AbstractDatabase database;
 	
 	protected boolean isReady = false;
 	protected boolean isFailed = false;
@@ -33,14 +38,14 @@ public class BenchmarkUser extends Thread {
 	protected Exception failException = null;
 	
 	public BenchmarkUser (BenchmarksScript owner, int userId, List<String[]> queryList, 
-			int iterations, int nodes) throws SQLException {
+			int iterations, int nodes, int numberOfTenants, AbstractDatabase database) throws SQLException {
 		this.owner = owner;
 		this.userId = userId;
 		this.queryList = queryList;
 		this.iterations = iterations;
 		this.nodes = nodes;
-		
-		this.random = new Random();
+		this.numberOfTenants = numberOfTenants;
+		this.database = database;
 	}
 	
 	public boolean isReady () {
@@ -101,15 +106,13 @@ public class BenchmarkUser extends Thread {
 		while(iter.hasNext()) {
 			String[] queries = iter.next();
 			int[] times = {0,0,0,0};
-			
-			long start = System.currentTimeMillis();
-			
+						
 			List<Thread> threads = new LinkedList<Thread>();
 			List<QueryRunner> queryRunners = new LinkedList<QueryRunner>();			
 			
 			// start query threads
 			for(int j = 0; j < queries.length; j++) {
-				QueryRunner qr = new QueryRunner(j+1, queries[j]);
+				QueryRunner qr = new QueryRunner(queries[j], iteration, setNum, j+1);
 				Thread t = new Thread(qr);
 				t.start();
 				threads.add(t);
@@ -124,13 +127,10 @@ public class BenchmarkUser extends Thread {
 				QueryResult queryResult = queryRunner.result;
 				
 				if (queryResult.failed == false) {
-					times[queryRunner.id-1]= queryResult.runtime; 
+					times[queryRunner.getId() -1]= queryResult.runtime; 
 				}
 			}
-			
-			// calculate time for complete set of queries
-			int setTime = (int) (System.currentTimeMillis() - start);
-			
+					
 			// save results
 			this.owner.addResult(
 				this.userId, 
@@ -139,8 +139,7 @@ public class BenchmarkUser extends Thread {
 				times[0],
 				times[1],
 				times[2],
-				times[3],
-				setTime
+				times[3]
 			);
 								
 			setNum++;
@@ -163,6 +162,9 @@ public class BenchmarkUser extends Thread {
 			// setup connection
 			Connection conn = DriverManager.getConnection(url, this.owner.dbUser, this.owner.dbPassword);
 			
+			// set time-out
+			database.setConnectionQueryTimeout(conn, BenchmarksScript.QUERY_TIMEOUT * 1000);
+						
 			// add connection to list of connections
 			this.conns.add(conn);
 			
@@ -170,31 +172,11 @@ public class BenchmarkUser extends Thread {
 		}
 	}
 	
-	protected void executeQuery(String query) throws Exception {
-		// grab a random connection
-		int myConnIndex = random.nextInt(this.nodes);
-		
-		// grab next connection
-		//int myConnIndex = connIndex++ % this.conns.size();
-				
-		Connection conn = this.conns.get(myConnIndex);
-		
+	protected void executeQuery(String query, int iteration, int setId, int queryId) throws Exception {	
+		// replace proper ORG ID's
 		query = this._replaceOrgId(query);
 		
-		synchronized(conn) {					
-			// execute query
-			Statement stmt = null;
-			ResultSet result = null;
-			try {
-				stmt = conn.createStatement();
-				result = stmt.executeQuery(query);
-			} catch (SQLException e) {
-				throw e;
-			} finally {
-				if (stmt != null) stmt.close();
-				if (result != null) result.close();
-			}
-		}
+		database.runBenchmarkQuery(this.conns, query, owner.getID(), this.userId, iteration, setId, queryId);	
 	}
 	
 	protected String _replaceOrgId(String query) {
@@ -217,23 +199,33 @@ public class BenchmarkUser extends Thread {
 	public class QueryRunner implements Runnable {
 		public QueryResult result;
 		
-		private int id;
+		private int queryId;
+		private int setId;
+		private int iteration;
 
-		public QueryRunner(int id, String query) {
+		public QueryRunner(String query, int iteration, int setId, int queryId) {
 			QueryResult result = new QueryResult(query);
-			this.id = id;
+			this.iteration = iteration;
+			this.queryId = queryId;
+			this.setId = setId;
 			this.result = result;
+		}
+		
+		public int getId () {
+			return queryId;
 		}
 
 		public void run() {
 			// Now execute the query
 			try {
 				long start = System.currentTimeMillis();
-				BenchmarkUser.this.executeQuery(this.result.query);
+				BenchmarkUser.this.executeQuery(this.result.query, this.iteration, this.setId, this.queryId);
 				int runTime = (int) (System.currentTimeMillis() - start);
 				this.result.runtime = runTime;
+			} catch (TimeoutException e) {
+				this.result.runtime = BenchmarksScript.QUERY_TIMEOUT;
 			} catch(Exception e) {
-				BenchmarkUser.this.owner.printError("Error in query #" + this.id + ": " + e.getMessage());
+				BenchmarkUser.this.owner.printError("Error in query #" + this.queryId + ": " + e.getMessage());
 				this.result.failed = true;
 			}
 		}
