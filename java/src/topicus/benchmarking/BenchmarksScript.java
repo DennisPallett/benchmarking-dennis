@@ -116,9 +116,7 @@ public class BenchmarksScript extends DatabaseScript {
 		this._loadDbConfig();
 		
 		// get information about current system setup
-		this._getDatabaseInfo();
-		
-		
+		this._getDatabaseInfo();		
 		
 		this.outputFile = cliArgs.getOptionValue("results-file", "");
 		if (this.outputFile.length() == 0) {
@@ -167,10 +165,15 @@ public class BenchmarksScript extends DatabaseScript {
 				System.exit(ExitCodes.NO_START);
 			}
 		}
-				
-		this.runBenchmarks();
+		
+		// start up separate slowness checker thread
+		SlowCheckThread slowChecker = new SlowCheckThread(this);
+		slowChecker.start();
+		
+		this.runBenchmarks();		
 		this.printSummary();
 		
+		slowChecker.interrupt();
 		printLine("Results saved to: " + this.outputFile);	
 		printLine("Quitting tool");	
 		
@@ -218,19 +221,15 @@ public class BenchmarksScript extends DatabaseScript {
 			set_time				
 		});
 		
-		if (this.results.size() >= 5) {
-			this._checkForSlow();
-		}	
-		
 		if ( (this.results.size() % (20 * this.numberOfUsers)) == 0) {
 			this.printSummary();
 		}
 	}
 	
-	protected void _checkForSlow () {
+	public void doSlowCheck () {
 		HashMap<String, Float> stats = this.calculateStats();
 		
-		if (stats.get("queryAvg") > TOO_SLOW) {
+		if (stats.get("queryCount") == 0 || stats.get("queryAvg") > TOO_SLOW) {
 			this.printError("Queries are too slow, current average: " + stats.get("queryAvg"));
 			this.slowStop();
 		}
@@ -281,8 +280,15 @@ public class BenchmarksScript extends DatabaseScript {
 			}
 		}
 		
-		float queryAvg = queryTotal / queryCount;
-		float setAvg = setTotal / setCount;
+		float queryAvg = 0;
+		if (queryCount > 0) {
+			queryAvg = queryTotal / queryCount;
+		}
+		
+		float setAvg = 0;
+		if (setCount > 0) {
+			setAvg = setTotal / setCount;
+		}
 		
 		stats.put("queryCount",  Float.valueOf(queryCount));
 		stats.put("queryMax", Float.valueOf(queryMax));
@@ -428,6 +434,25 @@ public class BenchmarksScript extends DatabaseScript {
 		
 		// all OK! queries loaded
 		printLine("Queries loaded, found " + this.queryList.size() + " sets");
+	}
+	
+	protected class SlowCheckThread extends Thread {
+		BenchmarksScript owner;
+		public SlowCheckThread (BenchmarksScript owner) {
+			this.owner = owner;
+		}
+		
+		public void run () {
+			// wait for 30 s
+			try {
+				Thread.sleep(30*1000);
+				
+				// check for slowness
+				owner.doSlowCheck();	
+			} catch (InterruptedException e) {
+
+			}					
+		}
 	}
 		
 	
