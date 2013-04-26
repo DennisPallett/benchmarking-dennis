@@ -50,4 +50,7 @@ perl -ne 'print if $_ !~ /mnt/' /etc/fstab > /etc/fstab.2
 echo '#/dev/md0  /mnt  ext4    defaults 0 0' >> /etc/fstab.2
 mv /etc/fstab.2 /etc/fstab
 
+mkdir /mnt/results
+mkdir /mnt/tenant-data
+
 printf "\n\nAll OK! RAID0 is setup!\n\n"

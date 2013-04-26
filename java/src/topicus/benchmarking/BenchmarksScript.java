@@ -14,6 +14,7 @@ import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -115,7 +116,7 @@ public class BenchmarksScript extends DatabaseScript {
 		printLine("ID of this benchmark: " + this.ID);
 		
 		// how often should the queries be run
-		this.iterations = Integer.parseInt(cliArgs.getOptionValue("iterations", "5"));
+		this.iterations = Integer.parseInt(cliArgs.getOptionValue("iterations", "3"));
 		printLine("Number of iterations set to: " + this.iterations);
 		
 		// how many concurrent users
@@ -177,6 +178,10 @@ public class BenchmarksScript extends DatabaseScript {
 		// setup benchmark users
 		this._setupUsers();
 		
+		// short pause to catch up
+		// after creating all users
+		Thread.sleep(1000);
+		
 		if (!this.cliArgs.hasOption("start")) {
 			if (this.confirmBoolean("Run benchmarks?") == false) {
 				System.exit(ExitCodes.NO_START);
@@ -191,10 +196,7 @@ public class BenchmarksScript extends DatabaseScript {
 		
 		// stop slowchecker (if still running)
 		slowChecker.interrupt();
-			
-		// download real (server-side) results
-		this.getRealResults();
-		
+				
 		this.printSummary();		
 		
 		printLine("Results saved to: " + this.outputFile);	
@@ -211,7 +213,7 @@ public class BenchmarksScript extends DatabaseScript {
 		}		
 	}
 	
-	public void addResult(int userId, int iteration, int set, int query1_time, int query2_time, int query3_time, int query4_time) {
+	public void addResult(int userId, int iteration, int set, int query1_time, int query2_time, int query3_time, int query4_time, int setTime) {
 		// directly write to file
 		this.resOut.writeNext(new String[] {
 			String.valueOf(userId),
@@ -220,7 +222,8 @@ public class BenchmarksScript extends DatabaseScript {
 			String.valueOf(query1_time),
 			String.valueOf(query2_time),
 			String.valueOf(query3_time),
-			String.valueOf(query4_time)
+			String.valueOf(query4_time),
+			String.valueOf(setTime)
 		});
 		
 		try {
@@ -239,7 +242,8 @@ public class BenchmarksScript extends DatabaseScript {
 			query1_time,
 			query2_time,
 			query3_time,
-			query4_time			
+			query4_time,
+			setTime
 		});
 	}
 	
@@ -249,6 +253,8 @@ public class BenchmarksScript extends DatabaseScript {
 		if (stats.get("queryCount") == 0 || stats.get("queryAvg") > TOO_SLOW) {
 			this.printError("Queries are too slow, current average: " + stats.get("queryAvg"));
 			this.slowStop();
+		} else {
+			printLine("Passed slowcheck, current average: " + stats.get("queryAvg") + " over " + stats.get("queryCount") + " queries");
 		}
 	}
 	
@@ -260,46 +266,30 @@ public class BenchmarksScript extends DatabaseScript {
 		}
 	}
 	
-	public void getRealResults () throws IOException, SQLException {
-		printLine("Fetching real server-side results from database");
-		
-		// does our database support this?
-		if (this.database.canFetchRealResults()  == false) {
-			printError("Database system does NOT support fetching real results!");
-			return;
-		}
-		
-		// clear previous temp results
-		this.resOut.close();
-		new File(this.outputFile).delete();
-		this.resOut = new CSVWriter(new FileWriter(this.outputFile, true), '\t', CSVWriter.NO_QUOTE_CHARACTER);
-		results = new ArrayList<int[]>();
-		
-		Connection conn = DriverManager.getConnection(connUrl, this.dbUser, this.dbPassword);
-		
-		int fetchCount = database.fetchRealResults(conn, this);
-		
-		conn.close();
-		
-		printLine("Fetched " + fetchCount + " real results from database");	
-	}
-	
 	public HashMap<String, Float> calculateStats () {
 		HashMap<String, Float> stats = new HashMap<String, Float>();
 		
 		// calculate query average
 		int queryMax = Integer.MIN_VALUE;
 		int queryMin = Integer.MAX_VALUE;
+		int setMax = Integer.MIN_VALUE;
+		int setMin = Integer.MAX_VALUE;
 		
 		int queryTotal = 0;
 		int queryCount = 0;
 		int timeoutCount = 0;
 		
+		int setTotal = 0;
+		int setCount = 0;
+		
 		for (int i=0; i < this.results.size(); i++) {
 			int[] result = results.get(i);	
+			int setTime = result[7];
 			
+			boolean hasFailedQueries = false;
 			for (int j=3;j < 7; j++) {
 				if (result[j] == QUERY_TIMEOUT) {
+					hasFailedQueries = true;
 					timeoutCount++;
 				} else if (result[j] > 0) {
 					int queryTime = result[j];
@@ -311,11 +301,24 @@ public class BenchmarksScript extends DatabaseScript {
 					if (queryTime > queryMax) queryMax = queryTime;
 				}
 			}
+			
+			if (hasFailedQueries == false) {
+				setTotal += setTime;
+				if (setTime < setMin) setMin = setTime;
+				if (setTime > setMax) setMax = setTime;
+				setCount++;
+			}
+			
 		}
 		
 		float queryAvg = 0;
 		if (queryCount > 0) {
 			queryAvg = queryTotal / queryCount;
+		}
+		
+		float setAvg = 0;
+		if (setCount > 0) {
+			setAvg = setTotal / setCount;
 		}
 				
 		stats.put("timeoutCount", Float.valueOf(timeoutCount));
@@ -324,21 +327,32 @@ public class BenchmarksScript extends DatabaseScript {
 		stats.put("queryAvg", Float.valueOf(queryAvg));
 		stats.put("queryMin", Float.valueOf(queryMin));
 		
+		stats.put("setCount",  Float.valueOf(setCount));
+		stats.put("setMax", Float.valueOf(setMax));
+		stats.put("setAvg", Float.valueOf(setAvg));
+		stats.put("setMin", Float.valueOf(setMin));
+		
 		return stats;
 	}
 	
 	public void printSummary () {
 		HashMap<String, Float> stats = this.calculateStats();
 		
+		DecimalFormat df = new DecimalFormat("#");
+		
 		this.printLine("---");
 		this.printLine("Results summary:");
 		this.printLine("----------------");
-		this.printLine("Number of queries: " + stats.get("queryCount"));
+		this.printLine("Number of queries: " + df.format(stats.get("queryCount")));
 		this.printLine("Min query time: " + stats.get("queryMin") + " ms");
 		this.printLine("Avg query time: " + stats.get("queryAvg") + " ms");
 		this.printLine("Max query time: " + stats.get("queryMax") + " ms");
-		this.printLine("Number of queries timed-out: " + stats.get("timeoutCount"));
+		this.printLine("Number of queries timed-out: " + df.format(stats.get("timeoutCount")));
 		this.printLine("----------------");	
+		this.printLine("Number of sets: " + stats.get("setCount"));
+		this.printLine("Min set time: " + stats.get("setMin") + " ms");
+		this.printLine("Avg set time: " + stats.get("setAvg") + " ms");
+		this.printLine("Max set time: " + stats.get("setMax") + " ms");
 	}	
 	
 	protected void runBenchmarks () throws InterruptedException {
@@ -463,9 +477,9 @@ public class BenchmarksScript extends DatabaseScript {
 		}
 		
 		public void run () {
-			// wait for 30 s
+			// wait to do slow check
 			try {
-				Thread.sleep(30*1000);
+				Thread.sleep(60*1000);
 				
 				// check for slowness
 				owner.doSlowCheck();	

@@ -94,7 +94,7 @@ public class AllBenchmarksScript extends DatabaseScript {
 		printLine("Number of nodes set to: " + this.nodes);
 		
 		// how often should the queries be run
-		this.iterations = Integer.parseInt(cliArgs.getOptionValue("iterations", "5"));
+		this.iterations = Integer.parseInt(cliArgs.getOptionValue("iterations", "3"));
 		printLine("Number of iterations set to: " + this.iterations);
 		
 		this.queriesFile = cliArgs.getOptionValue("queries");
@@ -121,7 +121,10 @@ public class AllBenchmarksScript extends DatabaseScript {
 		this.outputDirectory = cliArgs.getOptionValue("output", "");
 		File outputDir = new File(this.outputDirectory);
 		if (outputDir.exists() == false || outputDir.isFile()) {
-			throw new Exception("Invalid output directory specified");		
+			// try to create output directory
+			if (outputDir.mkdir() == false) {
+				throw new Exception("Invalid output directory specified and unable to create directory!");
+			}
 		}
 		this.outputDirectory = outputDir.getAbsolutePath() + "/";
 		printLine("Output directory set to: " + this.outputDirectory);

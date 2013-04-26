@@ -17,10 +17,16 @@ import topicus.databases.AbstractDatabase;
 import topicus.databases.AbstractDatabase.TimeoutException;
 
 public class BenchmarkUser extends Thread {
+	public final static int NR_OF_QUERIES = 4;
 	
+	protected Random random;	
 	
 	protected int userId;
-	protected List<Connection> conns = new ArrayList<Connection>();
+	//protected List<Connection> conns = new ArrayList<Connection>();
+	protected Connection[] conns = new Connection[NR_OF_QUERIES];
+	protected Statement[] statements = new Statement[NR_OF_QUERIES];
+	protected long[] startTimes = new long[NR_OF_QUERIES];
+	protected boolean[] isCancelled = new boolean[NR_OF_QUERIES];
 	
 	protected List<String[]> queryList;
 	protected int iterations;
@@ -34,8 +40,10 @@ public class BenchmarkUser extends Thread {
 	protected boolean isReady = false;
 	protected boolean isFailed = false;
 	protected boolean isFinished = false;
-	
+		
 	protected Exception failException = null;
+	
+	protected TimeoutWatcher timeoutWatcher = null;
 	
 	public BenchmarkUser (BenchmarksScript owner, int userId, List<String[]> queryList, 
 			int iterations, int nodes, int numberOfTenants, AbstractDatabase database) throws SQLException {
@@ -46,6 +54,15 @@ public class BenchmarkUser extends Thread {
 		this.nodes = nodes;
 		this.numberOfTenants = numberOfTenants;
 		this.database = database;
+		
+		startTimes[0] = -1;
+		startTimes[1] = -1;
+		startTimes[2] = -1;
+		startTimes[3] = -1;
+				
+		this.timeoutWatcher = new TimeoutWatcher(this);
+		
+		this.random = new Random();
 	}
 	
 	public boolean isReady () {
@@ -87,16 +104,36 @@ public class BenchmarkUser extends Thread {
 			this.failException = e;
 			this.owner.printError("User #" + this.userId + " failed");
 		}		
+		
+		// close all statements and connections
+		for(int i=0; i < NR_OF_QUERIES; i++) {
+			try {
+			statements[i].close();
+			} catch (SQLException e) { 
+				// don't care
+			}
+			try {
+				conns[i].close();
+			} catch (SQLException e) {
+				// don't care
+			}
+		}
 	}
 	
 	protected void runBenchmarks () throws InterruptedException {
 		this.owner.printLine("User #" + this.userId + " starting benchmarks");
+		
+		// start timeout watcher
+		this.timeoutWatcher.start();
 		
 		for(int i=1; i <= this.iterations; i++) {
 			this.owner.printLine("User #" + this.userId + " running iteration " + i);
 			this.runIteration(i);
 			this.owner.printLine("User #" + this.userId + " finished iteration " + i);
 		}
+		
+		// stop timeout watcher
+		this.timeoutWatcher.interrupt();
 	}
 	
 	protected void runIteration (int iteration) throws InterruptedException {
@@ -108,28 +145,35 @@ public class BenchmarkUser extends Thread {
 			int[] times = {0,0,0,0};
 						
 			List<Thread> threads = new LinkedList<Thread>();
-			List<QueryRunner> queryRunners = new LinkedList<QueryRunner>();			
-			
-			// start query threads
+			List<QueryRunner> queryRunners = new LinkedList<QueryRunner>();	
+						
+			// create query threads
 			for(int j = 0; j < queries.length; j++) {
 				QueryRunner qr = new QueryRunner(queries[j], iteration, setNum, j+1);
 				Thread t = new Thread(qr);
-				t.start();
 				threads.add(t);
 				queryRunners.add(qr);
 			}
 			
+			// start all queries
+			long startTime = System.currentTimeMillis();
+			for(int j=0; j < threads.size(); j++) {
+				threads.get(j).start();
+			}
+			
 			// get execution time for each query
-			for(int t = 0; t < threads.size(); t++) {
+			for(int t = 0; t < queryRunners.size(); t++) {
 				// Wait for thread to finish
 				threads.get(t).join();
 				QueryRunner queryRunner = queryRunners.get(t);
 				QueryResult queryResult = queryRunner.result;
 				
 				if (queryResult.failed == false) {
-					times[queryRunner.getId() -1]= queryResult.runtime; 
+					times[queryRunner.getQueryId() -1]= queryResult.runtime; 
 				}
 			}
+			
+			int setTime = (int) (System.currentTimeMillis() - startTime);
 					
 			// save results
 			this.owner.addResult(
@@ -139,7 +183,8 @@ public class BenchmarkUser extends Thread {
 				times[0],
 				times[1],
 				times[2],
-				times[3]
+				times[3],
+				setTime
 			);
 								
 			setNum++;
@@ -153,30 +198,63 @@ public class BenchmarkUser extends Thread {
 	public void setupConnections () throws SQLException {
 		this.owner.printLine("Setting up connections for user #" + this.userId);
 		
-		// setup connections
-		for(int i=1; i <= this.nodes; i++) {			
-			// setup connection string
-			String url = this.owner.getJdbcUrl() + "node" + i + ":" + this.owner.dbPort + "/" + this.owner.dbName;
-			this.owner.printLine("Setting up connection #" + i + ": " + url + " for user #" + this.userId);
-						
-			// setup connection
-			Connection conn = DriverManager.getConnection(url, this.owner.dbUser, this.owner.dbPassword);
+		// setup NR_OF_QUERIES connections (1 for each query)
+		for(int i=0; i < NR_OF_QUERIES; i++) {
+			// determine node
+			int node = (i % this.nodes) + 1;
 			
-			// set time-out
-			database.setConnectionQueryTimeout(conn, BenchmarksScript.QUERY_TIMEOUT * 1000);
-						
-			// add connection to list of connections
-			this.conns.add(conn);
+			String dsn = this.owner.getJdbcUrl() + "node" + node + ":" + this.owner.dbPort + "/" + this.owner.dbName;
 			
-			this.owner.printLine("Connection #" + i + " setup for user #" + this.userId);
+			this.owner.printLine("Setting up connection #" + (i+1) + ": " + dsn + " for user #" + this.userId);
+			
+			this.conns[i] = DriverManager.getConnection(dsn, this.owner.dbUser, this.owner.dbPassword);
+			
+			this.statements[i] = this.conns[i].createStatement();
+			
+			this.owner.printLine("Connection #" + (i+1) + " setup for user #" + this.userId);
 		}
 	}
 	
-	protected void executeQuery(String query, int iteration, int setId, int queryId) throws Exception {	
+	protected int executeQuery(String query, int iteration, int setId, int queryId) throws SQLException {	
 		// replace proper ORG ID's
 		query = this._replaceOrgId(query);
+			
+		// execute query
+		Statement stmt = this.statements[queryId-1];
+		ResultSet result = null;
+		int runTime = 0;
+		try {
+			isCancelled[queryId-1] = false;
+			startTimes[queryId-1] = System.currentTimeMillis();
+			result = stmt.executeQuery(query);
+			runTime = (int) ((int) System.currentTimeMillis() - startTimes[queryId-1]);
+			startTimes[queryId-1] = -1;
+		} catch (SQLException e) {
+			if (isCancelled[queryId-1]) {
+				runTime = BenchmarksScript.QUERY_TIMEOUT;
+			} else {
+				throw e;
+			}
+		} finally {
+			if (result != null) result.close();
+		}
 		
-		database.runBenchmarkQuery(this.conns, query, owner.getID(), this.userId, iteration, setId, queryId);	
+		return runTime;
+	}
+	
+	public void checkTimeouts () {
+		long currTime = System.currentTimeMillis();
+		for(int i=0; i < NR_OF_QUERIES; i++) {
+			if (currTime - startTimes[i] >= BenchmarksScript.QUERY_TIMEOUT) {
+				try {
+					isCancelled[i] = true;
+					statements[i].cancel();
+				} catch (SQLException e) {
+					e.printStackTrace();
+				}
+			}
+			
+		}
 	}
 	
 	protected String _replaceOrgId(String query) {
@@ -196,6 +274,38 @@ public class BenchmarkUser extends Thread {
 		return query;
 	}
 	
+	public class TimeoutWatcher extends Thread {
+		protected BenchmarkUser owner;
+		
+		public TimeoutWatcher (BenchmarkUser owner) {
+			this.owner = owner;
+		}
+		
+		public void run () {
+			// standard sleep granularity is 1000 ms
+			int sleep = 1000;
+			
+			// however standard sleep might be too high for very low
+			// time-outs. check this:
+			if (BenchmarksScript.QUERY_TIMEOUT < sleep) {
+				sleep = BenchmarksScript.QUERY_TIMEOUT / 2;
+			}
+			
+			while(true) {
+				try {
+					// wait certain number before checking again
+					Thread.sleep(sleep);
+					
+					// check for timed-out queries
+					owner.checkTimeouts();		
+				} catch (InterruptedException e) {
+					// don't care!
+				}
+			}
+		}
+		
+	}
+	
 	public class QueryRunner implements Runnable {
 		public QueryResult result;
 		
@@ -211,19 +321,15 @@ public class BenchmarkUser extends Thread {
 			this.result = result;
 		}
 		
-		public int getId () {
+		public int getQueryId () {
 			return queryId;
 		}
 
-		public void run() {
+		public void run() {		
 			// Now execute the query
 			try {
-				long start = System.currentTimeMillis();
-				BenchmarkUser.this.executeQuery(this.result.query, this.iteration, this.setId, this.queryId);
-				int runTime = (int) (System.currentTimeMillis() - start);
+				int runTime = BenchmarkUser.this.executeQuery(this.result.query, this.iteration, this.setId, this.queryId);
 				this.result.runtime = runTime;
-			} catch (TimeoutException e) {
-				this.result.runtime = BenchmarksScript.QUERY_TIMEOUT;
 			} catch(Exception e) {
 				BenchmarkUser.this.owner.printError("Error in query #" + this.queryId + ": " + e.getMessage());
 				this.result.failed = true;

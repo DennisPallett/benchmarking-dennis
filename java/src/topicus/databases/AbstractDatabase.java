@@ -20,20 +20,10 @@ public abstract class AbstractDatabase {
 	public abstract void dropTable (Connection conn, String tableName) throws SQLException;
 	public abstract void createTable(Connection conn, String tableName, ArrayList<DbColumn> columns, String partitionBy) throws SQLException;
 	public abstract int deployData(Connection conn, String fileName, String tableName) throws SQLException;
-	public abstract void setConnectionQueryTimeout(Connection conn, int timeout) throws SQLException;
 	
 	public abstract void runBenchmarkQuery (List<Connection> conns, String query, String benchmarkId, 
 			int userId, int iteration, int setId, int queryId) throws TimeoutException, SQLException;
-	
-	public boolean canFetchRealResults () {
-		return false;
-	}
-	
-	public int fetchRealResults(Connection conn, BenchmarksScript benchmark) throws SQLException {
-		// to be implemented by children
-		return -1;
-	}
-	
+		
 	public String prepareQuery(String query) {
 		return query;
 	}
