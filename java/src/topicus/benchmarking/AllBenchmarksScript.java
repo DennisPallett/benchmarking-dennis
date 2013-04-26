@@ -52,8 +52,8 @@ public class AllBenchmarksScript extends DatabaseScript {
 	
 	protected String queriesFile;		
 	
-	protected static final int[] users = {1, 2, 5, 10, 20, 30, 40, 50, 75, 100};
-	protected static final int[] tenants = {1, 2, 5, 10, 20, 30, 40, 50, 75, 100};
+	protected static final int[] users = {1, 2, 5, 10, 20, 35, 50};
+	protected static final int[] tenants = {1, 2, 5, 10, 20, 35, 50};
 	
 	protected ArrayList<Integer> deployedTenants = new ArrayList<Integer>();
 	

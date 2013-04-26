@@ -247,7 +247,7 @@ public class BenchmarkUser extends Thread {
 	public void checkTimeouts () {
 		long currTime = System.currentTimeMillis();
 		for(int i=0; i < NR_OF_QUERIES; i++) {
-			if (currTime - startTimes[i] >= BenchmarksScript.QUERY_TIMEOUT) {
+			if (startTimes[i] > -1 && currTime - startTimes[i] >= BenchmarksScript.QUERY_TIMEOUT) {
 				try {
 					isCancelled[i] = true;
 					statements[i].cancel();
