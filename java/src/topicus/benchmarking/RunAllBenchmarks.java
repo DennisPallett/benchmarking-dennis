@@ -87,6 +87,9 @@ public class RunAllBenchmarks extends RunDatabaseScript {
 			runner.run(args);
 		} catch (AllBenchmarksScript.CancelledException e) {
 			System.err.println("Script has been cancelled by user!");
+			
+			// making sure we really stop!
+			System.exit(0);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}

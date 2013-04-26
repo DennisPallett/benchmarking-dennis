@@ -106,6 +106,7 @@ public class BenchmarkUser extends Thread {
 		}		
 		
 		// close all statements and connections
+		this.owner.printLine("User #" + this.userId + " closing connections");
 		for(int i=0; i < NR_OF_QUERIES; i++) {
 			try {
 			statements[i].close();
@@ -118,6 +119,7 @@ public class BenchmarkUser extends Thread {
 				// don't care
 			}
 		}
+		this.owner.printLine("All connections for user #" + this.userId + " closed");
 	}
 	
 	protected void runBenchmarks () throws InterruptedException {
