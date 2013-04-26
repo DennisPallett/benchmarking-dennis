@@ -26,6 +26,11 @@ apt-get install ant -y
 # install SSH client and server
 apt-get install ssh -y
 
+# install NTP and set NTP server
+apt-get install ntp -y
+sed -i 's/\(server\s\+\)\([0-9]\+\)\.ubuntu\.pool\.ntp\.org/\1\2\.nl\.pool\.ntp\.org/g' /etc/ntp.conf
+service ntp restart > /dev/null
+
 # create benchmarking structure
 mkdir -p /benchmarking/
 
