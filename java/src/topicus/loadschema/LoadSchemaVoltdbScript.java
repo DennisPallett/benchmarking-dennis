@@ -3,6 +3,7 @@ package topicus.loadschema;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStream;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
@@ -13,6 +14,13 @@ import java.util.ArrayList;
 import java.util.Map;
 
 import org.apache.commons.cli.CommandLine;
+import org.apache.commons.io.FileUtils;
+
+import com.jcraft.jsch.Channel;
+import com.jcraft.jsch.ChannelExec;
+import com.jcraft.jsch.HostKeyRepository;
+import com.jcraft.jsch.JSch;
+import com.jcraft.jsch.Session;
 
 import au.com.bytecode.opencsv.CSVWriter;
 
@@ -25,38 +33,78 @@ import topicus.databases.DbColumn;
 import topicus.databases.DbTable;
 import topicus.loadtenant.LoadTenantScript.AlreadyDeployedException;
 
-public class LoadSchemaScript extends DatabaseScript {
+public class LoadSchemaVoltdbScript extends LoadSchemaScript {
 	protected String baseDirectory = "";	
 	
 	protected Connection conn;
 
-	public LoadSchemaScript(String type, AbstractDatabase database) {
+	public LoadSchemaVoltdbScript(String type, AbstractDatabase database) {
 		super(type, database);
 	}
 	
 	public void run () throws Exception {	
-		printLine("Started-up schema loading tool");	
+		printLine("Started-up schema loading tool for VoltDB");	
 		
 		this.setupLogging(cliArgs.getOptionValue("log-file"));
 		
 		printLine("Type set to: " + this.type);
-		
-		this.printLine("Setting up connection");
-		this.conn = this._setupConnection();
-		this.printLine("Connection setup");
-		
+			
 		this._setOptions();
 		
-		this._checkIfDeployed();
+		printLine("Ready to deploy schema & base data");
+		
+		if (!cliArgs.hasOption("start")) {
+			if (!confirmBoolean("Start with deployment of schema and base data? (y/n)")) {
+				throw new CancelledException("Cancelled by user");
+			}
+		}
+		
+		//this._checkIfDeployed();
+		
+		printLine("Setting up SSH connection with node1");
+		
+		JSch jsch = new JSch();
+		jsch.addIdentity(System.getProperty("user.home") + "/ssh_host_rsa_key");
+		Session session = jsch.getSession("root", "node1");
+		session.setConfig("StrictHostKeyChecking", "no");
+		
+		session.connect();
+		
+		printLine("yes");
+		
+		Channel channel = session.openChannel("exec");
+			
+		((ChannelExec)channel).setCommand("echo \"Hi!\"; echo \"I am $MY_NAME\"");
+		
+		channel.setInputStream(null);
+		((ChannelExec)channel).setErrStream(System.err);
+		
+		InputStream in=channel.getInputStream();
+		
+		channel.connect();
+		
+		byte[] tmp=new byte[1024];
+	      while(true){
+	        while(in.available()>0){
+	          int i=in.read(tmp, 0, 1024);
+	          if(i<0)break;
+	          System.out.print(new String(tmp, 0, i));
+	        }
+	        if(channel.isClosed()){
+	          System.out.println("exit-status: "+channel.getExitStatus());
+	          break;
+	        }
+	        try{Thread.sleep(1000);}catch(Exception ee){}
+	      }
+	      channel.disconnect();
+	      session.disconnect();
+		
+		
 			
 		this.printLine("Starting deployment of schema");
 		
-		this._deploySchema();
-		this._loadBaseData();
 
-		this.printLine("Finished deployment");		
-		
-		this.conn.close();
+		this.printLine("Finished deployment");			
 		this.printLine("Stopping");
 	}
 	

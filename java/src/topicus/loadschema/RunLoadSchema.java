@@ -8,7 +8,8 @@ public class RunLoadSchema extends RunDatabaseScript {
 	
 	public RunLoadSchema () {
 		super();
-		this.validTypes.add("vertica");
+		validTypes.add("vertica");
+		validTypes.add("voltdb");
 		
 		options.addOption(
 				OptionBuilder
@@ -26,6 +27,8 @@ public class RunLoadSchema extends RunDatabaseScript {
 		
 		if (this.type.equals("vertica")) {
 			loader = new LoadSchemaScript(this.type, this.database);
+		} else if(this.type.equals("voltdb")) {
+			loader = new LoadSchemaVoltdbScript(this.type, this.database);
 		}
 		
 		loader.setCliArgs(cliArgs);

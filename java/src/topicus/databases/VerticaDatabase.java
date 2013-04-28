@@ -57,7 +57,11 @@ public class VerticaDatabase extends AbstractDatabase {
 		return rows;
 	}
 	
-	public void createTable(Connection conn, String tableName, ArrayList<DbColumn> columns, String partitionBy) throws SQLException {
+	public void createTable(Connection conn, DbTable table) throws SQLException {
+		String tableName = table.getName();
+		ArrayList<DbColumn> columns = table.getColumns();
+		String partitionBy = table.partitionBy();
+		
 		// construct query
 		String query = "";
 		
@@ -127,12 +131,6 @@ public class VerticaDatabase extends AbstractDatabase {
 		q.execute("DROP TABLE IF EXISTS " + tableName + " CASCADE;");
 	}
 
-	@Override
-	public void runBenchmarkQuery(List<Connection> conns, String query, String benchmarkId, int userId,
-			int iteration, int setId, int queryId) throws SQLException, TimeoutException {	
-		
-		
-		
-	}
+
 
 }

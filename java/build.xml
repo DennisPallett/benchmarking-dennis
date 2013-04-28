@@ -48,6 +48,7 @@
     	<pathelement location="lib/httpclient-4.1.1.jar"/>
     	<pathelement location="lib/httpcore-4.1.jar"/>
     	<pathelement location="lib/aws-java-sdk-1.4.1.jar"/>
+    	<pathelement location="lib/jsch-0.1.49.jar"/>
     </path>
 	
     <target name="init">

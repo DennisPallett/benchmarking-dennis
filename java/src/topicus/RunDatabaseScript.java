@@ -8,6 +8,7 @@ import org.apache.commons.io.FileUtils;
 
 import topicus.databases.AbstractDatabase;
 import topicus.databases.VerticaDatabase;
+import topicus.databases.VoltdbDatabase;
 
 public class RunDatabaseScript extends RunConsoleScript {
 	protected final ArrayList<String> validTypes = new ArrayList<String>();
@@ -73,6 +74,8 @@ public class RunDatabaseScript extends RunConsoleScript {
 		
 		if (type.equals("vertica")) {
 			database = new VerticaDatabase();
+		} else if(type.equals("voltdb")) {
+			database = new VoltdbDatabase();
 		} else {
 			throw new Exception("Unknown database type specified");
 		}
