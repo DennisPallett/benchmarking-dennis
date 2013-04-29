@@ -142,7 +142,7 @@ public class DbSchema {
 	}
 	
 	public static DbTable MonthnamesTable () {
-		DbTable table = new DbTable("monthnames");
+		DbTable table = new DbTable("month_names");
 		
 		table.addColumn(
 				new DbColumn("month")
