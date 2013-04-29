@@ -6,6 +6,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.InetAddress;
+import java.net.SocketException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -365,6 +366,8 @@ public class ManageCluster {
 			String instanceId = EntityUtils.toString(response.getEntity());
 			usePublic = false;
 		} catch (ConnectTimeoutException e) {
+			usePublic = true;
+		} catch (SocketException e) {
 			usePublic = true;
 		}
 		
