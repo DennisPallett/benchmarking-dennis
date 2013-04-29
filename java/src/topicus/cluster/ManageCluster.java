@@ -53,7 +53,7 @@ import com.amazonaws.services.ec2.model.Volume;
 import com.amazonaws.services.ec2.model.VolumeState;
 
 public class ManageCluster {
-	public static final String DEFAULT_NODE_TYPE = "m1.large";
+	public static final String DEFAULT_NODE_TYPE = "m1.xlarge";
 	public static final String DEFAULT_SERVER_TYPE = "m1.medium";
 	public static final String DEFAULT_TEST_TYPE = "t1.micro";
 	
