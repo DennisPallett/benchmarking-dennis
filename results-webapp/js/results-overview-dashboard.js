@@ -31,11 +31,13 @@ var ResultsOverviewDashboard = new Class({
 				'group': '.'
 			});
 
-			if (time > 5000) {
-				ret = '<span style="color: red;">' + ret + '</span>';
-			}
-			if (time <= 1000) {
-				ret = '<span style="color: #339900;">' + ret + '</span>';
+			if (property != 'failed_querycount') {
+				if (time > this.getOptionValue('FAIL_LIMIT')) {
+					ret = '<span style="color: red;">' + ret + '</span>';
+				}
+				if (time <= 1000) {
+					ret = '<span style="color: #339900;">' + ret + '</span>';
+				}
 			}
 		}
 
@@ -54,9 +56,9 @@ var ResultsOverviewDashboard = new Class({
 		var headRow = new Element('tr');
 		headRow.adopt(new Element('th', {'html': '# of tenants'}));
 		headRow.adopt(new Element('th', {'html': '# of users'}));
-		headRow.adopt(new Element('th', {'html': '1 node', 'colspan': '2'}));
-		headRow.adopt(new Element('th', {'html': '2 nodes', 'colspan': '2'}));
-		headRow.adopt(new Element('th', {'html': '3 nodes', 'colspan': '2'}));
+		headRow.adopt(new Element('th', {'html': '1 node', 'colspan': '3'}));
+		headRow.adopt(new Element('th', {'html': '2 nodes', 'colspan': '3'}));
+		headRow.adopt(new Element('th', {'html': '3 nodes', 'colspan': '3'}));
 
 		header.adopt(headRow);
 
@@ -69,6 +71,7 @@ var ResultsOverviewDashboard = new Class({
 		NODES.each(function (node) {
 			subHeadRow.adopt(new Element('td', {'html': 'Avg query time (ms)'}));
 			subHeadRow.adopt(new Element('td', {'html': 'Avg set time (ms)'}));
+			subHeadRow.adopt(new Element('td', {'html': 'Failed queries'}));
 		});
 
 		table.adopt(subHeadRow);
@@ -80,8 +83,7 @@ var ResultsOverviewDashboard = new Class({
 					var row = new Element('tr');
 
 					if (first) {
-						row.setStyle('border-top', '3px double #CCC');
-					}
+						row.setStyle('border-top', '3px double #CCC');					}
 
 
 					row.adopt(new Element('td', {'html': (first) ? tenant : ''}));
@@ -89,10 +91,13 @@ var ResultsOverviewDashboard = new Class({
 
 					row.adopt(new Element('td', {'html': this._getNodeResult(data, tenant, user, 1, 'avg_querytime')}));
 					row.adopt(new Element('td', {'html': this._getNodeResult(data, tenant, user, 1, 'avg_settime')}));
+					row.adopt(new Element('td', {'html': this._getNodeResult(data, tenant, user, 1, 'failed_querycount')}));
 					row.adopt(new Element('td', {'html': this._getNodeResult(data, tenant, user, 2, 'avg_querytime')}));
 					row.adopt(new Element('td', {'html': this._getNodeResult(data, tenant, user, 2, 'avg_settime')}));
+					row.adopt(new Element('td', {'html': this._getNodeResult(data, tenant, user, 2, 'failed_querycount')}));
 					row.adopt(new Element('td', {'html': this._getNodeResult(data, tenant, user, 3, 'avg_querytime')}));
 					row.adopt(new Element('td', {'html': this._getNodeResult(data, tenant, user, 3, 'avg_settime')}));
+					row.adopt(new Element('td', {'html': this._getNodeResult(data, tenant, user, 3, 'failed_querycount')}));
 
 					body.adopt(row);
 				}

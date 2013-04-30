@@ -20,9 +20,13 @@ var ScalabilityScoreTableDashboard = new Class({
 			var expectedTime = '-';
 			try {
 				expectedTime = Number.from(data[tenant][user][node]['expected']['avg_querytime']);
-				expectedTime = expectedTime.format({
-					decimals: 0
-				});
+				if (expectedTime == '-1') {
+					expectedTime = '-';
+				} else {
+					expectedTime = expectedTime.format({
+						decimals: 0
+					});
+				}
 			} catch (e) {}
 			row.adopt(new Element('td', {'html': expectedTime, 'styles': {'border-left': '3px double #CCC'}}));
 		}		
@@ -31,15 +35,22 @@ var ScalabilityScoreTableDashboard = new Class({
 		try {
 			actualTime = Number.from(data[tenant][user][node]['actual']['avg_querytime']);
 		} catch (e) {}
+		if (actualTime > this.getOptionValue('FAIL_LIMIT')) {
+			actualTime = '<span style="color: red;">' + actualTime + '</span>';
+		}
 		row.adopt(new Element('td', {'html': actualTime}));
 
 		if (node > 1) {
 			var score = '-';
 			try {
 				score = Number.from(data[tenant][user][node]['query_score']);
-				score = score.format({
-					decimals: 2
-				});
+				if (score == '-1') {
+					score = '-';
+				} else {
+					score = score.format({
+						decimals: 2
+					});
+				}
 			} catch (e) {}
 			row.adopt(new Element('td', {'html': score, 'styles': {'border-right': '3px double #CCC'}}));
 		}
@@ -89,7 +100,6 @@ var ScalabilityScoreTableDashboard = new Class({
 
 		subHeadRow.adopt(new Element('td', {'html': '&nbsp;'}));
 
-
 		table.adopt(subHeadRow);
 
 		TENANTS.each(function (tenant) {
@@ -113,9 +123,13 @@ var ScalabilityScoreTableDashboard = new Class({
 					var score = '-';
 					try {
 						score = Number.from(data[tenant][user]['query_score']);
-						score = score.format({
-							decimals: 2
-						});
+						if (score == '-1') {
+							score = '-';
+						} else {
+							score = score.format({
+								decimals: 2
+							});
+						}
 					} catch (e) {}
 
 					row.adopt(new Element('td', {'html': score}));

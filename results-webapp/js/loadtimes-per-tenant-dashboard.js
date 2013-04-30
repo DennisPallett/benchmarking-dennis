@@ -30,7 +30,7 @@ var LoadTimesPerTenantDashboard = new Class({
 		});
 
 		// fill results array with dummy value
-		while (results.length < 10) {
+		while (results.length < 5) {
 			results[results.length] = 0;
 		}
 
@@ -54,7 +54,7 @@ var LoadTimesPerTenantDashboard = new Class({
                 text:  "The load rate for tenants per node for " + PRODUCTS[this.getOptionValue('product')]
             },
             xAxis: {
-                categories: ['1-10', '11-20', '21-30', '31-40', '41-50', '51-60', '61-70', '71-80', '81-90', '91-100'],
+                categories: ['1-10', '11-20', '21-30', '31-40', '41-50'],
 				title: {text: 'Tenants'}
             },
             yAxis: {

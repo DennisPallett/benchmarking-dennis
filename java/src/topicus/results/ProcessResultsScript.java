@@ -23,6 +23,7 @@ import org.apache.commons.io.FileUtils;
 import au.com.bytecode.opencsv.CSVReader;
 
 import topicus.ConsoleScript;
+import topicus.benchmarking.BenchmarksScript;
 
 public class ProcessResultsScript extends ConsoleScript {
 	class InvalidDataDirectoryException extends Exception {}
@@ -396,34 +397,29 @@ public class ProcessResultsScript extends ConsoleScript {
 		int setCount = 0;
 		int queryTotal = 0;
 		int setTotal = 0;
+		int failedTotal = 0;
 		for (String[] row : rows) {
 			if (row.length > 1) {
 				int userId = Integer.parseInt(row[0]);
 				int iteration = Integer.parseInt(row[1]);
 				int setId = Integer.parseInt(row[2]);
-				int query1_time = Integer.parseInt(row[3]);
-				int query2_time = Integer.parseInt(row[4]);
-				int query3_time = Integer.parseInt(row[5]);
-				int query4_time = Integer.parseInt(row[6]);
-				int set_time = Integer.parseInt(row[7]);
+				int set_time = Integer.parseInt(row[7]);			
+				int[] queryTimes = new int[5];				
 				
-				if (query1_time > 0) {
-					queryCount++;
-					queryTotal += query1_time;
+				// parse query times (row items 3-6)
+				for(int i=1; i < 5; i++) {
+					queryTimes[i] = Integer.parseInt(row[i+2]);
+					
+					if (queryTimes[i] > 0) {
+						queryCount++;
+						queryTotal += queryTimes[i];
+						
+						if (queryTimes[i] == BenchmarksScript.QUERY_TIMEOUT) {
+							failedTotal++;
+						}												
+					}
 				}
-				if (query2_time > 0) {
-					queryCount++;
-					queryTotal += query2_time;
-				}
-				if (query3_time > 0) {
-					queryCount++;
-					queryTotal += query3_time;
-				}
-				if (query4_time > 0) {
-					queryCount++;
-					queryTotal += query4_time;
-				}
-				
+								
 				if (set_time > 0) {
 					setCount++;
 					setTotal += set_time;
@@ -433,10 +429,10 @@ public class ProcessResultsScript extends ConsoleScript {
 				q.setInt(2,  userId);
 				q.setInt(3,  iteration);
 				q.setInt(4,  setId);
-				q.setInt(5,  query1_time);
-				q.setInt(6,  query2_time);
-				q.setInt(7,  query3_time);
-				q.setInt(8,  query4_time);
+				q.setInt(5,  queryTimes[1]);
+				q.setInt(6,  queryTimes[2]);
+				q.setInt(7,  queryTimes[3]);
+				q.setInt(8,  queryTimes[4]);
 				q.setInt(9,  set_time);
 				
 				q.execute();	
@@ -447,11 +443,12 @@ public class ProcessResultsScript extends ConsoleScript {
 		float queryAvg = queryTotal / queryCount;
 		float setAvg = setTotal / setCount;
 		
-		q = conn.prepareStatement("UPDATE benchmark SET benchmark_avg_querytime = ?, benchmark_avg_settime = ? " +
-				"WHERE benchmark_id = ?");
+		q = conn.prepareStatement("UPDATE benchmark SET benchmark_avg_querytime = ?, benchmark_avg_settime = ?, " +
+				"benchmark_failed_querycount = ? WHERE benchmark_id = ?");
 		q.setFloat(1, queryAvg);
 		q.setFloat(2, setAvg);
-		q.setInt(3, benchmarkId);
+		q.setInt(3, failedTotal);
+		q.setInt(4, benchmarkId);
 		q.executeUpdate();
 		
 		this.printLine("Inserted " + rowCount + " results");

@@ -1,5 +1,7 @@
 <?php
 
+define('FAIL_LIMIT', 5000);
+
 class DashboardsApplication {
 	protected $dashboards = array();
 	protected $_config = array();
@@ -62,8 +64,11 @@ class DashboardsApplication {
 
 		$data = $dashboard->loadData();
 
+		$options = $dashboard->getOptionsUsed();
+		$options['FAIL_LIMIT'] = FAIL_LIMIT;
 
-		$ret = array('data' => $data, 'options' => $dashboard->getOptionsUsed());
+
+		$ret = array('data' => $data, 'options' => $options);
 		return $ret;
 	}
 
@@ -191,8 +196,9 @@ class ResultsOverviewDashboard extends Dashboard {
 			$nodes = $row['benchmark_nodes'];
 
 			$ret[$tenants][$users][$nodes] = array(
-				'avg_querytime' => $row['benchmark_avg_querytime'],
-				'avg_settime'	=> $row['benchmark_avg_settime']
+				'avg_querytime'		=> $row['benchmark_avg_querytime'],
+				'avg_settime'		=> $row['benchmark_avg_settime'],
+				'failed_querycount'	=> $row['benchmark_failed_querycount']
 			);
 
 		}
@@ -333,8 +339,13 @@ class ScalabilityScoreTableDashboard extends Dashboard {
 				$benchmarkSetScoreList = array();
 
 				foreach($nodes as $node => $row) {
-					$querytime = 0;
-					$settime = 0;
+					$expectedQueryTime = -1;
+					$expectedSetTime = -1;
+					$queryScore = -1;
+					$setScore = -1;
+
+					$actualQueryTime = $ret[$tenant][$user][$node]['actual']['avg_querytime'];
+					$actualSetTime = $ret[$tenant][$user][$node]['actual']['avg_settime'];
 
 					$prevNodeId = $node - 1;
 					if (isset($ret[$tenant][$user][$prevNodeId])) {
@@ -343,19 +354,25 @@ class ScalabilityScoreTableDashboard extends Dashboard {
 						$prevQueryTime = $prevNode['actual']['avg_querytime'];
 						$prevSetTime = $prevNode['actual']['avg_settime'];
 
-						// calculated expected values
-						$querytime = $prevQueryTime * ($prevNodeId / $node);
-						$settime = $prevSetTime * ($prevNodeId / $node);
+						if ($prevQueryTime < FAIL_LIMIT) {
+							// calculated expected values
+							$expectedQueryTime = $prevQueryTime * ($prevNodeId / $node);
+							$expectedSetTime = $prevSetTime * ($prevNodeId / $node);
+
+							$actualQueryTimeChange = ($actualQueryTime - $prevQueryTime);
+							$expectedQueryTimeChange = ($expectedQueryTime - $prevQueryTime);
+							$queryScore = $actualQueryTimeChange / $expectedQueryTimeChange;
+
+							$actualSetTimeChange = ($actualSetTime - $prevSetTime);
+							$expectedSetTimeChange = ($expectedSetTime - $prevSetTime);
+							$setScore = $actualSetTimeChange / $expectedSetTimeChange;
+						}
 					}
 
 					$ret[$tenant][$user][$node]['expected'] = array(
-						'avg_querytime'	=> $querytime,
-						'avg_settime'	=> $settime
-					);
-
-					// calculate scalability scores for this node
-					$queryScore = $querytime / $ret[$tenant][$user][$node]['actual']['avg_querytime'];
-					$setScore = $settime / $ret[$tenant][$user][$node]['actual']['avg_settime'];
+						'avg_querytime'	=> $expectedQueryTime,
+						'avg_settime'	=> $expectedSetTime
+					);				
 
 					$ret[$tenant][$user][$node]['query_score'] = $queryScore;
 					$ret[$tenant][$user][$node]['set_score'] = $setScore;
@@ -367,11 +384,11 @@ class ScalabilityScoreTableDashboard extends Dashboard {
 				}
 
 				// calculate scores for this benchmark (average of all nodes)
-				$benchmarkQueryScore = 0;
+				$benchmarkQueryScore = -1;
 				if (count($benchmarkQueryScoreList) > 0) {
 					$benchmarkQueryScore = array_sum($benchmarkQueryScoreList) / count($benchmarkQueryScoreList);
 				}
-				$benchmarkSetScore = 0;
+				$benchmarkSetScore = -1;
 				if (count($benchmarkSetScoreList) > 0) {
 					$benchmarkSetScore = array_sum($benchmarkSetScoreList) / count($benchmarkSetScoreList);
 				}
@@ -390,13 +407,13 @@ class ScalabilityScoreTableDashboard extends Dashboard {
 		}
 
 		// calculate global scalability scores for this product
-		$globalQueryScore = 0;
+		$globalQueryScore = -1;
 		if (count($globalQueryScoreList) > 0) {
 			$globalQueryScore = array_sum($globalQueryScoreList) / count($globalQueryScoreList);
 		}
 
 
-		$globalSetScore = 0;
+		$globalSetScore = -1;
 		if (count($globalSetScoreList) > 0) {
 			$globalSetScore = array_sum($globalSetScoreList) / count($globalSetScoreList);
 		}
