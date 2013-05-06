@@ -10,6 +10,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Map;
+import java.util.Observable;
 
 import org.apache.commons.cli.CommandLine;
 
@@ -33,7 +34,7 @@ public class LoadTenantScript extends AbstractTenantScript {
 	
 	protected int nodeCount = -1;
 
-	public LoadTenantScript(String type, AbstractDatabase database, AbstractManageTenant manageTenant) {
+	public LoadTenantScript(String type, AbstractDatabase database, ManageTenant manageTenant) {
 		super(type, database, manageTenant);
 	}
 	
@@ -66,6 +67,7 @@ public class LoadTenantScript extends AbstractTenantScript {
 		this.printLine("Finished deployment of tenant data");		
 		
 		this.conn.close();
+		this.database.close();
 		this.printLine("Stopping");
 	}
 	
@@ -106,13 +108,14 @@ public class LoadTenantScript extends AbstractTenantScript {
 		
 		this.printLine("Deploying `" + tableFile + "` into `" + tableName + "`");	
 		
-		long start = System.currentTimeMillis();
-		int rows = this.database.deployData(this.conn, this.tenantDirectory + tableFile,  tableName);
-		int runTime = (int) (System.currentTimeMillis() - start);
+		int[] ret = this.database.deployData(this.conn, this.tenantDirectory + tableFile,  tableName);
+		
+		int runTime = ret[0];
+		int rows = ret[1];
 		
 		this.printLine("Inserted " + rows + " rows");
 		
-		this.addResult(tableName,  rows, runTime);		
+		this.addResult(tableName, rows, runTime);		
 	}
 		
 	protected void _setOptions () throws Exception {
@@ -153,11 +156,13 @@ public class LoadTenantScript extends AbstractTenantScript {
 		
 		this.resOut = new CSVWriter(new FileWriter(this.outputFile, true), '\t', CSVWriter.NO_QUOTE_CHARACTER);
 	}
-
+	
 	public class MissingResultsFileException extends Exception {
 		public MissingResultsFileException(String string) {
 			super(string);
 		}
 	}
+
+	
 	
 }

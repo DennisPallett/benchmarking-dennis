@@ -9,6 +9,7 @@ public class RunLoadTenant extends RunDatabaseScript {
 	public RunLoadTenant () {
 		super();
 		this.validTypes.add("vertica");
+		this.validTypes.add("voltdb");
 		
 		options.addOption(
 				OptionBuilder
@@ -64,6 +65,8 @@ public class RunLoadTenant extends RunDatabaseScript {
 		
 		if (this.type.equals("vertica")) {
 			loader = new LoadTenantScript(this.type, this.database, new VerticaManageTenant());
+		} else {
+			loader = new LoadTenantScript(this.type, this.database, new ManageTenant());
 		}
 		
 		loader.setCliArgs(cliArgs);

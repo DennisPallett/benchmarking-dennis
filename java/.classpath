@@ -16,5 +16,7 @@
 	<classpathentry kind="lib" path="C:/Users/Dennis/Documents/GitHub/benchmarking-dennis/java/lib/commons-lang3-3.1.jar"/>
 	<classpathentry kind="lib" path="C:/Users/Dennis/Documents/GitHub/benchmarking-dennis/java/lib/commons-codec-1.7.jar"/>
 	<classpathentry kind="lib" path="C:/Users/Dennis/Documents/GitHub/benchmarking-dennis/java/lib/jsch-0.1.49.jar"/>
+	<classpathentry kind="lib" path="C:/Users/Dennis/Documents/GitHub/benchmarking-dennis/java/lib/voltdb-3.2.0.1.jar"/>
+	<classpathentry kind="lib" path="C:/Users/Dennis/Documents/GitHub/benchmarking-dennis/java/lib/guava-14.0.1.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

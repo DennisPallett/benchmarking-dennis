@@ -49,12 +49,16 @@ public class VerticaDatabase extends AbstractDatabase {
 		return nodeCount;
 	}
 	
-	public int deployData(Connection conn, String fileName, String tableName)
+	public int[] deployData(Connection conn, String fileName, String tableName)
 			throws SQLException {
 		Statement q = conn.createStatement();
+		
+		long start = System.currentTimeMillis();
 		int rows = q.executeUpdate("COPY " + tableName + " from '" + fileName + "' delimiter '#'" +
 				" null as 'NULL' abort on error DIRECT;");
-		return rows;
+		int runTime = (int) (System.currentTimeMillis() - start);
+		
+		return new int[]{runTime, rows};
 	}
 	
 	public void createTable(Connection conn, DbTable table) throws SQLException {

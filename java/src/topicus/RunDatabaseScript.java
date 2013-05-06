@@ -2,6 +2,8 @@ package topicus;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Observable;
+import java.util.Observer;
 
 import org.apache.commons.cli.OptionBuilder;
 import org.apache.commons.io.FileUtils;

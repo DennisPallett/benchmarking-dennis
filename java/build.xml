@@ -49,6 +49,8 @@
     	<pathelement location="lib/httpcore-4.1.jar"/>
     	<pathelement location="lib/aws-java-sdk-1.4.1.jar"/>
     	<pathelement location="lib/jsch-0.1.49.jar"/>
+    	<pathelement location="lib/guava-14.0.1.jar"/>
+    	<pathelement location="lib/voltdb-3.2.0.1.jar"/>
     </path>
 	
     <target name="init">

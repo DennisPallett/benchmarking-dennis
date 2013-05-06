@@ -31,7 +31,7 @@ public class UnloadTenantScript extends AbstractTenantScript {
 	
 	protected int nodeCount = -1;
 
-	public UnloadTenantScript(String type, AbstractDatabase database, AbstractManageTenant manageTenant) {
+	public UnloadTenantScript(String type, AbstractDatabase database, ManageTenant manageTenant) {
 		super(type, database, manageTenant);
 	}
 	

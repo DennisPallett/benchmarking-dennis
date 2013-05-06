@@ -18,14 +18,14 @@ import topicus.DatabaseScript;
 import topicus.databases.AbstractDatabase;
 
 public abstract class AbstractTenantScript extends DatabaseScript {
-	protected AbstractManageTenant manageTenant;
+	protected ManageTenant manageTenant;
 	protected int tenantId = -1;
 	
 	protected Connection conn;
 	
 	protected LinkedHashMap<String, String> tables = new LinkedHashMap<String, String>();
 
-	public AbstractTenantScript(String type, AbstractDatabase database, AbstractManageTenant manageTenant) {
+	public AbstractTenantScript(String type, AbstractDatabase database, ManageTenant manageTenant) {
 		super(type, database);
 		this.manageTenant = manageTenant;		
 			
@@ -51,7 +51,7 @@ public abstract class AbstractTenantScript extends DatabaseScript {
 			// check if table even has data
 			try {
 				PreparedStatement q = conn.prepareStatement("SELECT organisatie_key FROM closure_organisatie" +
-						" WHERE organisatie_key >= ? AND organisatie_key <= ? LIMIT 1");
+						" WHERE organisatie_key >= ? AND organisatie_key <= ? ORDER BY organisatie_key LIMIT 1");
 				
 				q.setInt(1, beginPk);
 				q.setInt(2, endPk);
@@ -79,7 +79,7 @@ public abstract class AbstractTenantScript extends DatabaseScript {
 			// check if table even has data
 			try {
 				PreparedStatement q = conn.prepareStatement("SELECT " + tenantField + " FROM "
-										+ tableName + " WHERE " + tenantField + " = ? LIMIT 1");
+										+ tableName + " WHERE " + tenantField + " = ? ORDER BY " + tenantField + " ASC LIMIT 1");
 				q.setInt(1,  tenantId);
 				q.execute();
 				ResultSet result = q.getResultSet();
@@ -103,7 +103,7 @@ public abstract class AbstractTenantScript extends DatabaseScript {
 	protected boolean isTenantDeployed () throws SQLException {
 		boolean ret = false;
 		
-		PreparedStatement q = this.conn.prepareStatement("SELECT a_tenant FROM dim_administratie WHERE a_tenant = ? limit 1");
+		PreparedStatement q = this.conn.prepareStatement("SELECT a_tenant FROM dim_administratie WHERE a_tenant = ? ORDER BY a_tenant ASC limit 1");
 		q.setInt(1,  this.tenantId);
 		
 		ResultSet result = q.executeQuery();

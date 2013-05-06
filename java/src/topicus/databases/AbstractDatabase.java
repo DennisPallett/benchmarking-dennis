@@ -4,22 +4,29 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Observable;
 
+import topicus.ConsoleScript;
 import topicus.benchmarking.BenchmarksScript;
 
-public abstract class AbstractDatabase {
+public abstract class AbstractDatabase extends Observable {
 	protected String name;
 	protected String user;
 	protected String password;
 	protected int port;
 	
+
 	public abstract String getJdbcDriverName ();
 	public abstract String getJdbcUrl ();
 	
 	public abstract int getNodeCount(Connection conn) throws SQLException; 
 	public abstract void dropTable (Connection conn, String tableName) throws SQLException;
 	public abstract void createTable(Connection conn, DbTable table) throws SQLException;
-	public abstract int deployData(Connection conn, String fileName, String tableName) throws SQLException;
+	public abstract int[] deployData(Connection conn, String fileName, String tableName) throws SQLException;
+	
+	public void close () {
+		// do something
+	}
 	
 	public void dropTable(Connection conn, DbTable table) throws SQLException {
 		this.dropTable(conn, table.getName());
@@ -47,6 +54,11 @@ public abstract class AbstractDatabase {
 	
 	public int getPort () {
 		return this.port;
+	}
+	
+	public void printLine (String msg) {
+		this.setChanged();
+		this.notifyObservers(msg);
 	}
 	
 	public class TimeoutException extends Exception {}

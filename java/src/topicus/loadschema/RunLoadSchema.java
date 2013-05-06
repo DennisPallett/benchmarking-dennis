@@ -17,7 +17,23 @@ public class RunLoadSchema extends RunDatabaseScript {
 				.withDescription("Specify the local directory on the database node that contains the base data")
 				.withLongOpt("base-data")
 				.create()
-		);	
+		);
+		
+		options.addOption(
+				OptionBuilder
+				.hasArg()
+				.withDescription("Specify the output directory")
+				.withLongOpt("output-directory")
+				.create()
+		);
+		
+		options.addOption(
+				OptionBuilder
+				.hasArg()
+				.withDescription("Specify the file that contains the benchmark queries")
+				.withLongOpt("queries")
+				.create("q")
+		);
 	}
 	
 	public void run (String[] args)  throws Exception {

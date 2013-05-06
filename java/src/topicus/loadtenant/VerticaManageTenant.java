@@ -5,7 +5,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 
-public class VerticaManageTenant extends AbstractManageTenant {
+public class VerticaManageTenant extends ManageTenant {
 
 	@Override
 	public void deleteDataFromTable(String tableName, String tenantField, int tenantId)

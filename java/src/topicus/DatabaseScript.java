@@ -3,12 +3,14 @@ package topicus;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
+import java.util.Observable;
+import java.util.Observer;
 
 import org.apache.commons.cli.CommandLine;
 
 import topicus.databases.AbstractDatabase;
 
-public abstract class DatabaseScript extends ConsoleScript {
+public abstract class DatabaseScript extends ConsoleScript implements Observer {
 	protected static final int EXIT_INVALID_JDBC_DRIVER = 9;
 	
 	public boolean dbConfigLoaded = false;
@@ -25,6 +27,13 @@ public abstract class DatabaseScript extends ConsoleScript {
 	public DatabaseScript (String type, AbstractDatabase database) {
 		this.type = type;
 		this.database = database;
+		
+		this.database.addObserver(this);
+	}
+	
+	@Override
+	public void update(Observable o, Object arg) {
+		printLine((String)arg);		
 	}
 	
 	public String getJdbcUrl () {
@@ -37,11 +46,21 @@ public abstract class DatabaseScript extends ConsoleScript {
 		}
 		
 		// setup connection strings
-		String url = this.database.getJdbcUrl() + "node1:" + this.dbPort + "/" + this.dbName;
+		String url = this.database.getJdbcUrl() + "node1:" + this.dbPort;
+		if (this.dbName.length() > 0) {
+			url += "/" + this.dbName;
+		}
 		this.printLine("Connection string: " + url);
 					
 		// setup connection
-		return DriverManager.getConnection(url, this.dbUser, this.dbPassword);
+		Connection conn = null;
+		if (this.dbUser.length() > 0 && this.dbPassword.length() > 0) {
+			conn = DriverManager.getConnection(url, this.dbUser, this.dbPassword);
+		} else {
+			conn = DriverManager.getConnection(url);
+		}
+		
+		return conn;
 	}
 
 	protected void _loadDbConfig () throws Exception {
@@ -55,13 +74,13 @@ public abstract class DatabaseScript extends ConsoleScript {
 		}
 		
 		this.dbName = cliArgs.getOptionValue("database", this.database.getName());
-		if (this.dbName == null || this.dbName.length() == 0) {
+		if (this.dbName == null) {
 			this.printError("No database specified");
 			System.exit(-1);
 		}
 		
 		this.dbUser = cliArgs.getOptionValue("database-user", this.database.getUser());
-		if (this.dbUser == null || this.dbUser.length() == 0) {
+		if (this.dbUser == null) {
 			this.printError("No database user specified");
 			System.exit(-1);
 		}
