@@ -1,0 +1,61 @@
+#!/bin/bash
+
+echo "===== VoltDB Cluster Start-up Script ====="
+echo "This script is used to start up a VoltDB "
+echo "cluster with one or more nodes"
+echo ""
+
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+# The script needs admin rights
+if [ `/usr/bin/id -u` -ne 0 ]; then
+    echo "Run as sudo / root"
+    exit 1
+fi
+
+NODES=$1
+
+if [ "$NODES" == "" ]; then
+    echo "ERROR: you must specify the number of nodes to use"
+    exit 1
+fi
+
+if [ $NODES -lt 1 ]; then
+    echo "ERROR: number of specified nodes must be at least 1"
+    exit 1
+fi
+
+echo "Info: using $NODES nodes"
+
+HOST=`hostname`
+
+# check if VoltDB is already running
+IS_RUNNING=`ps aux | grep "voltdb" | grep ".jar"`
+if [[ "$IS_RUNNING" == *jar* ]]; then
+   echo "ERROR: VoltDB is already running on this node. Shut it down first!"
+   exit 1
+fi
+
+VOLTDB_DIR=/mnt/voltdb
+
+# delete old VoltDB directory
+rm -rf "$VOLTDB_DIR"
+
+# create new VoltDB directory
+mkdir -p "$VOLTDB_DIR"
+mkdir -p "$VOLTDB_DIR/log"
+
+echo "Info: created VoltDB directory"
+
+# copy and prepare deployment file
+DEPLOYMENT="$VOLTDB_DIR/deployment.xml"
+cp deployment.xml "$DEPLOYMENT"
+sed -i "s/{NODES}/$NODES/g" "$DEPLOYMENT"
+
+echo "Info: copied and prepared deployment.xml"
+
+# start VoltDB
+cd "$VOLTDB_DIR"
+echo "Info: starting VoltDB on $HOST"
+nohup voltdb create host node1 catalog "$SCRIPT_DIR/catalog.jar" deployment "$DEPLOYMENT" > "$VOLTDB_DIR/log/daemon.log" &
+echo "Info: started!"

@@ -10,15 +10,7 @@ public class RunLoadSchema extends RunDatabaseScript {
 		super();
 		validTypes.add("vertica");
 		validTypes.add("voltdb");
-		
-		options.addOption(
-				OptionBuilder
-				.hasArg()
-				.withDescription("Specify the local directory on the database node that contains the base data")
-				.withLongOpt("base-data")
-				.create()
-		);
-		
+			
 		options.addOption(
 				OptionBuilder
 				.hasArg()

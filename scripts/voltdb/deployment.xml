@@ -1,0 +1,7 @@
+<deployment>
+	<cluster hostcount="{NODES}" sitesperhost="3" />
+
+	<paths>
+		<voltdbroot path="/mnt/voltdb" />
+	</paths>
+</deployment>
