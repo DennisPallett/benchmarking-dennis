@@ -36,6 +36,11 @@ if [[ "$IS_RUNNING" == *jar* ]]; then
    exit 1
 fi
 
+if [ $NODES -eq 1 -a $HOST != "node1" ]; then
+    echo "ERROR: Can only run single-node cluster on node1"
+    exit 1
+fi
+
 VOLTDB_DIR=/mnt/voltdb
 
 # delete old VoltDB directory
@@ -59,3 +64,5 @@ cd "$VOLTDB_DIR"
 echo "Info: starting VoltDB on $HOST"
 nohup voltdb create host node1 catalog "$SCRIPT_DIR/catalog.jar" deployment "$DEPLOYMENT" > "$VOLTDB_DIR/log/daemon.log" &
 echo "Info: started!"
+
+tail -f "$VOLTDB_DIR/log/daemon.log"

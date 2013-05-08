@@ -207,13 +207,10 @@ public class BenchmarkUser extends Thread {
 			// determine node
 			int node = (i % this.nodes) + 1;
 			
-		
-			this.owner.printLine("Setting up connection #" + (i+1) + " for user #" + this.userId);
+					this.owner.printLine("Setting up connection #" + (i+1) + " to node" + node + " for user #" + this.userId);
 			
 			this.conns[i] = database.setupConnection("node" + node);
-			
-			//this.statements[i] = this.conns[i].createStatement();
-			
+						
 			this.owner.printLine("Connection #" + (i+1) + " setup for user #" + this.userId);
 		}
 	}
@@ -253,7 +250,7 @@ public class BenchmarkUser extends Thread {
 		}	
 				
 		stmt = (PreparedStatement) this.statements[queryId-1];
-		
+				
 		try {
 			isCancelled[queryId-1] = false;
 			startTimes[queryId-1] = System.currentTimeMillis();
@@ -280,6 +277,7 @@ public class BenchmarkUser extends Thread {
 				try {
 					isCancelled[i] = true;
 					statements[i].cancel();
+					
 				} catch (SQLException e) {
 					e.printStackTrace();
 				}
