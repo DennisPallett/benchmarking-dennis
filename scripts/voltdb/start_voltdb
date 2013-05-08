@@ -54,7 +54,7 @@ echo "Info: created VoltDB directory"
 
 # copy and prepare deployment file
 DEPLOYMENT="$VOLTDB_DIR/deployment.xml"
-cp deployment.xml "$DEPLOYMENT"
+cp "$SCRIPT_DIR/deployment.xml" "$DEPLOYMENT"
 sed -i "s/{NODES}/$NODES/g" "$DEPLOYMENT"
 
 echo "Info: copied and prepared deployment.xml"
@@ -63,6 +63,11 @@ echo "Info: copied and prepared deployment.xml"
 cd "$VOLTDB_DIR"
 echo "Info: starting VoltDB on $HOST"
 nohup voltdb create host node1 catalog "$SCRIPT_DIR/catalog.jar" deployment "$DEPLOYMENT" > "$VOLTDB_DIR/log/daemon.log" &
+sleep 1
+
 echo "Info: started!"
+echo "Loading daemon log file"
+
+sleep 1
 
 tail -f "$VOLTDB_DIR/log/daemon.log"
