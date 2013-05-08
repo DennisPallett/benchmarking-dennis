@@ -60,6 +60,7 @@ public class LoadBaseDataScript extends DatabaseScript {
 		this.printLine("Finished loading!");		
 		
 		this.conn.close();
+		this.database.close();
 		this.printLine("Stopping");
 	}
 	
