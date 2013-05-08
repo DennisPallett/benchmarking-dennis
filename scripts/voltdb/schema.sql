@@ -149,13 +149,17 @@ CREATE PROCEDURE FROM CLASS procedures.AbstractQuery;
 CREATE PROCEDURE FROM CLASS procedures.Query1;
 CREATE PROCEDURE FROM CLASS procedures.Query2;
 CREATE PROCEDURE FROM CLASS procedures.Query3;
+CREATE PROCEDURE FROM CLASS procedures.Query4;
 CREATE PROCEDURE FROM CLASS procedures.Query5;
 CREATE PROCEDURE FROM CLASS procedures.Query6;
+CREATE PROCEDURE FROM CLASS procedures.Query7;
 CREATE PROCEDURE FROM CLASS procedures.Query8;
 
 PARTITION PROCEDURE Query1 ON TABLE fact_exploitatie COLUMN year_key;
 PARTITION PROCEDURE Query2 ON TABLE fact_exploitatie COLUMN year_key;
 PARTITION PROCEDURE Query3 ON TABLE fact_exploitatie COLUMN year_key;
+PARTITION PROCEDURE Query4 ON TABLE fact_exploitatie COLUMN year_key;
 PARTITION PROCEDURE Query5 ON TABLE fact_exploitatie COLUMN year_key;
 PARTITION PROCEDURE Query6 ON TABLE fact_exploitatie COLUMN year_key;
+PARTITION PROCEDURE Query7 ON TABLE fact_exploitatie COLUMN year_key;
 PARTITION PROCEDURE Query8 ON TABLE fact_exploitatie COLUMN year_key;

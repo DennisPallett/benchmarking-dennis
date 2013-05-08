@@ -1,8 +1,10 @@
 package topicus.benchmarking;
 
 import java.io.PrintWriter;
+import java.sql.CallableStatement;
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -205,13 +207,12 @@ public class BenchmarkUser extends Thread {
 			// determine node
 			int node = (i % this.nodes) + 1;
 			
-			String dsn = this.owner.getJdbcUrl() + "node" + node + ":" + this.owner.dbPort + "/" + this.owner.dbName;
+		
+			this.owner.printLine("Setting up connection #" + (i+1) + " for user #" + this.userId);
 			
-			this.owner.printLine("Setting up connection #" + (i+1) + ": " + dsn + " for user #" + this.userId);
+			this.conns[i] = database.setupConnection("node" + node);
 			
-			this.conns[i] = DriverManager.getConnection(dsn, this.owner.dbUser, this.owner.dbPassword);
-			
-			this.statements[i] = this.conns[i].createStatement();
+			//this.statements[i] = this.conns[i].createStatement();
 			
 			this.owner.printLine("Connection #" + (i+1) + " setup for user #" + this.userId);
 		}
@@ -222,13 +223,41 @@ public class BenchmarkUser extends Thread {
 		query = this._replaceOrgId(query);
 			
 		// execute query
-		Statement stmt = this.statements[queryId-1];
 		ResultSet result = null;
 		int runTime = 0;
+			
+		PreparedStatement stmt = null;
+		
+		Connection conn = this.conns[queryId-1];
+		
+		if (query.toLowerCase().indexOf("call:") > -1) {
+			String procName = query.substring(5, query.indexOf(":", 5));
+			String args[] = query.substring(("CALL:" + procName + ":").length()).split(":");
+			
+			String procQuery = "{call " + procName + "(";        	
+        	for(String arg : args) {
+        		procQuery += "?, ";
+        	}
+        	procQuery = procQuery.substring(0, procQuery.length()-2);
+        	procQuery += ")}";
+        	
+			CallableStatement proc = conn.prepareCall(procQuery);
+			
+			for(int i=0; i < args.length; i++) {
+				proc.setString(i+1,  args[i]);
+			}
+			
+			this.statements[queryId-1] = proc;			
+		} else {		
+			this.statements[queryId-1] = conn.prepareStatement(query);
+		}	
+				
+		stmt = (PreparedStatement) this.statements[queryId-1];
+		
 		try {
 			isCancelled[queryId-1] = false;
 			startTimes[queryId-1] = System.currentTimeMillis();
-			result = stmt.executeQuery(query);
+			result = stmt.executeQuery();
 			runTime = (int) ((int) System.currentTimeMillis() - startTimes[queryId-1]);
 			startTimes[queryId-1] = -1;
 		} catch (SQLException e) {
@@ -266,7 +295,7 @@ public class BenchmarkUser extends Thread {
 		final int ORG_ROW_COUNT = 988;
 		
 		// id's in queries
-		int[] ids = {752, 756, 799};
+		int[] ids = {752, 755, 756, 799};
 		
 		// replace each ID
 		for(int id : ids) {

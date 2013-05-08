@@ -14,6 +14,7 @@ public class RunAllBenchmarks extends RunDatabaseScript {
 		
 		// types we support:
 		this.validTypes.add("vertica");
+		this.validTypes.add("voltdb");
 		
 		options.addOption(
 				OptionBuilder

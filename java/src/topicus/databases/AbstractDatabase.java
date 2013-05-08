@@ -1,6 +1,7 @@
 package topicus.databases;
 
 import java.sql.Connection;
+import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
@@ -23,6 +24,24 @@ public abstract class AbstractDatabase extends Observable {
 	public abstract void dropTable (Connection conn, String tableName) throws SQLException;
 	public abstract void createTable(Connection conn, DbTable table) throws SQLException;
 	public abstract int[] deployData(Connection conn, String fileName, String tableName) throws SQLException;
+		
+	public Connection setupConnection (String host) throws SQLException {
+		// setup connection strings
+		String url = this.getJdbcUrl() + host + ":" + this.port;
+		if (this.name.length() > 0) {
+			url += "/" + this.name;
+		}
+					
+		// setup connection
+		Connection conn = null;
+		if (this.user.length() > 0 && this.password.length() > 0) {
+			conn = DriverManager.getConnection(url, this.user, this.password);
+		} else {
+			conn = DriverManager.getConnection(url);
+		}
+		
+		return conn;
+	}
 	
 	public void close () {
 		// do something

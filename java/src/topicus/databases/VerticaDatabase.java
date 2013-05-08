@@ -31,7 +31,7 @@ public class VerticaDatabase extends AbstractDatabase {
 	public String getJdbcUrl() {
 		return "jdbc:vertica://";
 	}
-		
+			
 	public int getNodeCount(Connection conn) throws SQLException {	
 		Statement stmt = conn.createStatement();
 		ResultSet result = null;

@@ -368,13 +368,9 @@ public class BenchmarksScript extends DatabaseScript {
 		}
 	}
 	
-	protected void _getDatabaseInfo () throws SQLException {
-		// setup connection strings
-		this.connUrl = this.database.getJdbcUrl() + "node1:" + this.dbPort + "/" + this.dbName;
-		this.printLine("Connection string: " + connUrl);
-					
+	protected void _getDatabaseInfo () throws SQLException {				
 		// setup connection
-		Connection conn = DriverManager.getConnection(connUrl, this.dbUser, this.dbPassword);
+		Connection conn = this.database.setupConnection("node1");
 		
 		this.tenantCount = this.getTenantCount(conn);
 		
