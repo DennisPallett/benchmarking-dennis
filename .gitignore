@@ -1,5 +1,6 @@
 .DS_Store
 
-java/bin/*
-java/build/*
-voltdb_procedures/bin/*
+*/build/*
+*/.classpath
+*/.project
+*/bin/*
