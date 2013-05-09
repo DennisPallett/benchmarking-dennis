@@ -33,6 +33,8 @@ PRIMARY KEY (grootboek_key)
 );
 
 CREATE INDEX GbCode1HashIndex ON dim_grootboek (gb_verdichting_code_1);
+CREATE INDEX GbCode2HashIndex ON dim_grootboek (gb_verdichting_code_2);
+CREATE INDEX GbCode3HashIndex ON dim_grootboek (gb_verdichting_code_3);
 
 CREATE TABLE dim_kostenplaats (
 kostenplaats_key INTEGER NOT NULL,
@@ -66,7 +68,7 @@ CREATE TABLE closure_organisatie (
 organisatie_key INTEGER NOT NULL,
 parent INTEGER NOT NULL
 );
-CREATE INDEX ClosureOrgHashIndex ON closure_organisatie (organisatie_key);
+
 CREATE INDEX ClosureParentHashIndex ON closure_organisatie (parent);
 
 CREATE TABLE month_names (
@@ -141,7 +143,7 @@ PARTITION TABLE fact_exploitatie ON COLUMN year_key;
 
 
 CREATE INDEX FactMonthTreeIdx ON fact_exploitatie (month_key);
-CREATE INDEX FactYearTreeIdx ON fact_exploitatie (year_key);
+CREATE INDEX FactYearHashIdx ON fact_exploitatie (year_key);
 CREATE INDEX FactOrganisatieTreeIdx ON fact_exploitatie (organisatie_key);
 
 

@@ -16,7 +16,7 @@ public class Query8 extends AbstractQuery {
 			" WHERE f.month_key=m.month" +
 			" AND f.grootboek_key=g.grootboek_key" +
 			" AND " + OrganisationClause +
-			" AND g.gb_verdichting_toonnaam_1 = '(3) Baten'" +
+			" AND g.gb_verdichting_code_1 = 3" +
 			" AND f.month_key >= 06" +
 			" AND f.month_key <= 11" +
 			" AND f.year_key = ?" +

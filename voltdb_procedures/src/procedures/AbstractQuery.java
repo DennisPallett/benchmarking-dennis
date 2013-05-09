@@ -5,7 +5,7 @@ import org.voltdb.VoltProcedure;
 import org.voltdb.VoltTable;
 
 public class AbstractQuery extends VoltProcedure {
-	public final SQLStmt GetOrgIds = new SQLStmt("SELECT organisatie_key FROM closure_organisatie WHERE parent = ? AND organisatie_key <> ?" +
+	public final SQLStmt GetOrgIds = new SQLStmt("SELECT organisatie_key FROM closure_organisatie WHERE parent = ?" +
 			" ORDER BY organisatie_key ASC");
 	
 	public final String OrganisationClause = "(f.organisatie_key = ? OR (f.organisatie_key >= ? AND f.organisatie_key <= ?))";
@@ -14,7 +14,7 @@ public class AbstractQuery extends VoltProcedure {
 		VoltTable[] queryResults;
 		VoltTable result;
 		
-		voltQueueSQL(GetOrgIds, parentId, parentId); 
+		voltQueueSQL(GetOrgIds, parentId); 
 		queryResults = voltExecuteSQL();
 		
 		result = queryResults[0];

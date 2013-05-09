@@ -15,8 +15,8 @@ public class Query7 extends AbstractQuery {
 		" FROM fact_exploitatie AS f, dim_grootboek AS g" +
 		" WHERE f.grootboek_key = g.grootboek_key" +
 		" AND " + OrganisationClause +
-		" AND g.gb_verdichting_toonnaam_1 = '(4) Lasten'" +
-		" AND g.gb_verdichting_toonnaam_2 = '(45) Overige lasten'" +
+		" AND g.gb_verdichting_code_1 = 4" +
+		" AND g.gb_verdichting_code_2 = 45" +
 		" AND f.month_key = 10" +
 		" AND f.year_key = ?" +
 		" GROUP BY tenant_key" +

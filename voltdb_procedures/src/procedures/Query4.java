@@ -3,10 +3,6 @@ package procedures;
 import org.voltdb.*;
 
 public class Query4 extends AbstractQuery {
-	public final SQLStmt GetParent = new SQLStmt(
-		"SELECT id, naam FROM organisatie WHERE id = ?"
-	);
-	
 	public final SQLStmt GetNumbers = new SQLStmt(
 		" SELECT" +
 		" g.gb_verdichting_toonnaam_1," +
@@ -17,8 +13,8 @@ public class Query4 extends AbstractQuery {
 		" FROM fact_exploitatie AS f, dim_grootboek AS g" +
 		" WHERE f.grootboek_key = g.grootboek_key" +
 		" AND " + OrganisationClause +
-		" AND g.gb_verdichting_toonnaam_1 = '(4) Lasten'" +
-		" AND g.gb_verdichting_toonnaam_2 = '(45) Overige lasten'" +
+		" AND g.gb_verdichting_code_1 = 4" +
+		" AND g.gb_verdichting_code_2 = 45" +
 		" AND f.month_key = 10" +
 		" AND f.year_key = ?" +
 		" GROUP BY g.gb_verdichting_toonnaam_1, g.gb_verdichting_toonnaam_2, g.gb_verdichting_toonnaam_3" +
