@@ -32,7 +32,7 @@ public class Query8 extends AbstractQuery {
 		long max = orgIds[1];
 		
 		voltQueueSQL(GetResult, parentId, min, max, yearKey); 
-		queryResults = voltExecuteSQL();
+		queryResults = voltExecuteSQL(true);
 		
 		result = queryResults[0];		
 		return result;

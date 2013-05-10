@@ -44,7 +44,7 @@ public class Query7 extends AbstractQuery {
 		// get parent info
 		voltQueueSQL(GetParent, parentId);
 		
-		queryResults = voltExecuteSQL();
+		queryResults = voltExecuteSQL(true);
 		
 		VoltTable numbersTable = queryResults[0];
 		VoltTable orgTable = queryResults[1];		

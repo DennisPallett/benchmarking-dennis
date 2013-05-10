@@ -18,7 +18,7 @@ public class Query4 extends AbstractQuery {
 		" AND f.month_key = 10" +
 		" AND f.year_key = ?" +
 		" GROUP BY g.gb_verdichting_toonnaam_1, g.gb_verdichting_toonnaam_2, g.gb_verdichting_toonnaam_3" +
-		" ORDER BY g.gb_verdichting_toonnaam_3"		
+		" ORDER BY g.gb_verdichting_toonnaam_1, g.gb_verdichting_toonnaam_2, g.gb_verdichting_toonnaam_3"		
 	);
 	
 	public VoltTable run (int yearKey, int parentId) throws VoltAbortException {
@@ -30,7 +30,7 @@ public class Query4 extends AbstractQuery {
 		long max = orgIds[1];
 		
 		voltQueueSQL(GetNumbers, parentId, min, max, yearKey);		
-		queryResults = voltExecuteSQL();
+		queryResults = voltExecuteSQL(true);
 		
 		VoltTable result = queryResults[0];
 		

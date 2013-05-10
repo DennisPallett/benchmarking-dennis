@@ -1,0 +1,26 @@
+#!/bin/bash
+
+echo "===== VoltDB Restore Snapshot Script ====="
+echo "This script is used to restore the latest snapshot"
+echo ""
+
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+# The script needs admin rights
+if [ `/usr/bin/id -u` -ne 0 ]; then
+    echo "Run as sudo / root"
+    exit 1
+fi
+
+SNAPSHOT_DIR=/mnt/snapshots
+
+cd "$SNAPSHOT_DIR"
+LATEST_FILE=`ls *.jar -t | head -1`
+
+LATEST="${LATEST_FILE%????}"
+
+echo "Restoring snapshot: $LATEST"
+
+voltadmin restore "$SNAPSHOT_DIR" "$LATEST"
+
+echo "Restore finished!"

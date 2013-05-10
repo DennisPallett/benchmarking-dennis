@@ -1,0 +1,34 @@
+#!/bin/bash
+
+echo "===== VoltDB Create Snapshot Script ====="
+echo "This script is used to create a snapshot of the current database in VoltDB"
+echo ""
+
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+# The script needs admin rights
+if [ `/usr/bin/id -u` -ne 0 ]; then
+    echo "Run as sudo / root"
+    exit 1
+fi
+
+SNAPSHOT_DIR=/mnt/snapshots
+mkdir -p "$SNAPSHOT_DIR"
+
+if [ ! -d "$SNAPSHOT_DIR" ]; then
+    echo "ERROR: snapshot dir does not exist and unable to create!"
+    exit 1
+fi
+
+NAME="snapshot_`date +%Y.%m.%d_%H.%M.%S`"
+
+# pause VoltDB
+voltadmin pause
+
+# create snapshot
+voltadmin save "$SNAPSHOT_DIR" "$NAME"
+
+# resume VoltDB
+voltadmin resume
+
+echo "Finished, saved snapshot to $SNAPSHOT_DIR"

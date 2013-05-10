@@ -3,5 +3,6 @@
 
 	<paths>
 		<voltdbroot path="/mnt/voltdb" />
+		<snapshots path="/mnt/snapshots" />
 	</paths>
 </deployment>

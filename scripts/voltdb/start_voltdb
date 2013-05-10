@@ -42,6 +42,10 @@ if [ $NODES -eq 1 -a $HOST != "node1" ]; then
 fi
 
 VOLTDB_DIR=/mnt/voltdb
+SNAPSHOTS_DIR=/mnt/snapshots
+
+# make sure snapshots directory exists
+mkdir -p "$SNAPSHOTS_DIR"
 
 # delete old VoltDB directory
 rm -rf "$VOLTDB_DIR"
@@ -63,6 +67,7 @@ echo "Info: copied and prepared deployment.xml"
 cd "$VOLTDB_DIR"
 echo "Info: starting VoltDB on $HOST"
 nohup voltdb create host node1 catalog "$SCRIPT_DIR/catalog.jar" deployment "$DEPLOYMENT" > "$VOLTDB_DIR/log/daemon.log" &
+echo $! > "$VOLTDB_DIR/.pid"
 sleep 1
 
 echo "Info: started!"
