@@ -2,18 +2,26 @@ package topicus.databases;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.UnknownHostException;
 import java.sql.CallableStatement;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.apache.commons.lang3.StringUtils;
+import org.voltdb.client.Client;
+import org.voltdb.client.ClientConfig;
+import org.voltdb.client.ClientFactory;
+import org.voltdb.client.ClientResponse;
+import org.voltdb.client.NoConnectionsException;
+import org.voltdb.client.ProcCallException;
 
 import com.jcraft.jsch.Channel;
 import com.jcraft.jsch.ChannelExec;
@@ -21,7 +29,9 @@ import com.jcraft.jsch.JSch;
 import com.jcraft.jsch.JSchException;
 import com.jcraft.jsch.Session;
 
+import topicus.benchmarking.AbstractBenchmarkRunner;
 import topicus.benchmarking.BenchmarksScript;
+import topicus.benchmarking.JdbcBenchmarkRunner;
 
 public class VoltdbDatabase extends AbstractDatabase {
 	protected Session sshSession = null;
@@ -34,6 +44,10 @@ public class VoltdbDatabase extends AbstractDatabase {
 		this.user = "";
 		this.password = "";
 		this.port = 21212;	
+	}
+	
+	public AbstractBenchmarkRunner createBenchmarkRunner () {
+		return new BenchmarkRunner();
 	}
 	
 	public Session getSshSession () {
@@ -188,5 +202,115 @@ public class VoltdbDatabase extends AbstractDatabase {
 	public void dropTable(Connection conn, String tableName) throws SQLException {
 		throw new SQLException("Not supported by VoltDB");
 	}
+	
+	public class BenchmarkRunner extends AbstractBenchmarkRunner {
+		protected Client client;
+
+		@Override
+		public void prepareBenchmark() throws PrepareException {
+			try {
+				this.setupClient();
+			} catch (Exception e) {
+				throw new PrepareException(e.getClass().getName() + ": " + e.getMessage());
+			}		
+		}
+
+		@Override
+		public void runIteration(int iteration) {
+			Iterator<String[]> iter = this.queryList.iterator();
+			
+			int setNum = 1;
+			while(iter.hasNext()) {
+				String[] setInfo = iter.next();
+				String procName = setInfo[0];
+				String yearKey = setInfo[1];
+				String parentId = setInfo[2];
+				
+				long startTime = System.currentTimeMillis();
+				ClientResponse response = null;
+				boolean timeout = false;
+				boolean failed = false;
+				
+				try {
+					response = client.callProcedure(procName,  yearKey, parentId);
+				} catch (Exception e) {
+					if (response != null && response.getStatus() == ClientResponse.CONNECTION_TIMEOUT) {
+						timeout = true;
+					} else {
+						e.printStackTrace();
+						failed = true;
+					}
+				}
+				
+				int setTime = (int) (System.currentTimeMillis() - startTime);
+				int queryTime = setTime/4;
+				
+				if (timeout) {
+					setTime = BenchmarksScript.QUERY_TIMEOUT;
+					queryTime = BenchmarksScript.QUERY_TIMEOUT;
+				}
+				
+				// save results
+				if (failed == false) {
+					this.owner.addResult(
+						this.userId, 
+						iteration, 
+						setNum,
+						queryTime,
+						queryTime,
+						queryTime,
+						queryTime,
+						setTime
+					);
+				}
+				
+				setNum++;
+				
+				// rate limiting
+				// to avoid flooding the database
+				try {
+					Thread.sleep(100);
+				} catch (InterruptedException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
+			
+		}
+
+		@Override
+		public void finishBenchmark() {
+			this.owner.printLine("User #" + this.userId + " closing client");
+			
+			try {
+				client.close();
+			} catch (InterruptedException e) {
+				// don't care
+			}
+					
+			this.owner.printLine("Client for user #" + this.userId + " closed");			
+		}
+		
+		protected void setupClient () throws UnknownHostException, IOException {
+			// determine node
+			int node = (this.userId % this.nodes) + 1;
+						
+			this.owner.printLine("Setting up client for user #" + this.userId + " to node" + node);
+			
+			// setup config
+			ClientConfig config = new ClientConfig(null, null);
+			config.setProcedureCallTimeout(BenchmarksScript.QUERY_TIMEOUT);
+			config.setConnectionResponseTimeout(BenchmarksScript.QUERY_TIMEOUT);
+			
+			// create Client object
+			client = ClientFactory.createClient(config);
+						
+			// create connection
+			client.createConnection("node" + node);
+		}
+		
+	}
+
+
 
 }

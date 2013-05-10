@@ -2,7 +2,7 @@ package procedures;
 
 import org.voltdb.*;
 
-public class Query8 extends AbstractQuery {
+public class Query8 extends VoltProcedure {
 	public final SQLStmt GetResult = new SQLStmt("SELECT " +
 			" f.year_key," +
 			" f.month_key," +
@@ -12,26 +12,26 @@ public class Query8 extends AbstractQuery {
 			" '(3) Baten'," +
 			" SUM(f.m_budgetbedrag) AS begroting," +
 			" SUM(f.m_realisatiebedrag) AS realisatie" +
-			" FROM fact_exploitatie AS f, month_names AS m, dim_grootboek AS g" +
+			" FROM fact_exploitatie AS f, month_names AS m, dim_grootboek AS g, closure_organisatie AS c" +
 			" WHERE f.month_key=m.month" +
 			" AND f.grootboek_key=g.grootboek_key" +
-			" AND " + OrganisationClause +
+			//" AND f.organisatie_key = c.organisatie_key" +
+			//" AND c.parent = ?" +
+			" AND (c.organisatie_key * 1000000 + c.parent) = (f.organisatie_key * 1000000 + ?) " +
 			" AND g.gb_verdichting_code_1 = 3" +
 			" AND f.month_key >= 06" +
 			" AND f.month_key <= 11" +
 			" AND f.year_key = ?" +
 			" GROUP BY f.year_key, f.month_key, m.month_name" +
-			" ORDER BY f.year_key, f.month_key, m.month_name");
+			" ORDER BY f.year_key, f.month_key, m.month_name",
+			"fact_exploitatie,closure_organisatie,dim_grootboek,month_names"
+	);
 	
 	public VoltTable run (int yearKey, int parentId) throws VoltAbortException {
 		VoltTable[] queryResults;
 		VoltTable result;
 		
-		long[] orgIds = this.getOrgIds(parentId);
-		long min = orgIds[0];
-		long max = orgIds[1];
-		
-		voltQueueSQL(GetResult, parentId, min, max, yearKey); 
+		voltQueueSQL(GetResult, parentId, yearKey); 
 		queryResults = voltExecuteSQL(true);
 		
 		result = queryResults[0];		

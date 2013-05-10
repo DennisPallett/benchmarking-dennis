@@ -32,10 +32,6 @@ gb_source_adminnr VARCHAR(20) NOT NULL,
 PRIMARY KEY (grootboek_key)
 );
 
-CREATE INDEX GbCode1HashIndex ON dim_grootboek (gb_verdichting_code_1);
-CREATE INDEX GbCode2HashIndex ON dim_grootboek (gb_verdichting_code_2);
-CREATE INDEX GbCode3HashIndex ON dim_grootboek (gb_verdichting_code_3);
-
 CREATE TABLE dim_kostenplaats (
 kostenplaats_key INTEGER NOT NULL,
 kp_tenant INTEGER NOT NULL,
@@ -69,7 +65,7 @@ organisatie_key INTEGER NOT NULL,
 parent INTEGER NOT NULL
 );
 
-CREATE INDEX ClosureParentHashIndex ON closure_organisatie (parent);
+CREATE INDEX ClosureHashIndex ON closure_organisatie ( (organisatie_key*1000000) + parent);
 
 CREATE TABLE month_names (
 month INTEGER NOT NULL,
@@ -141,27 +137,11 @@ PRIMARY KEY (dwh_id)
 );
 PARTITION TABLE fact_exploitatie ON COLUMN year_key;
 
-
 CREATE INDEX FactMonthTreeIdx ON fact_exploitatie (month_key);
 CREATE INDEX FactYearHashIdx ON fact_exploitatie (year_key);
-CREATE INDEX FactOrganisatieTreeIdx ON fact_exploitatie (organisatie_key);
 
+CREATE PROCEDURE FROM CLASS procedures.Set1;
+CREATE PROCEDURE FROM CLASS procedures.Set2;
 
-CREATE PROCEDURE FROM CLASS procedures.AbstractQuery;
-CREATE PROCEDURE FROM CLASS procedures.Query1;
-CREATE PROCEDURE FROM CLASS procedures.Query2;
-CREATE PROCEDURE FROM CLASS procedures.Query3;
-CREATE PROCEDURE FROM CLASS procedures.Query4;
-CREATE PROCEDURE FROM CLASS procedures.Query5;
-CREATE PROCEDURE FROM CLASS procedures.Query6;
-CREATE PROCEDURE FROM CLASS procedures.Query7;
-CREATE PROCEDURE FROM CLASS procedures.Query8;
-
-PARTITION PROCEDURE Query1 ON TABLE fact_exploitatie COLUMN year_key;
-PARTITION PROCEDURE Query2 ON TABLE fact_exploitatie COLUMN year_key;
-PARTITION PROCEDURE Query3 ON TABLE fact_exploitatie COLUMN year_key;
-PARTITION PROCEDURE Query4 ON TABLE fact_exploitatie COLUMN year_key;
-PARTITION PROCEDURE Query5 ON TABLE fact_exploitatie COLUMN year_key;
-PARTITION PROCEDURE Query6 ON TABLE fact_exploitatie COLUMN year_key;
-PARTITION PROCEDURE Query7 ON TABLE fact_exploitatie COLUMN year_key;
-PARTITION PROCEDURE Query8 ON TABLE fact_exploitatie COLUMN year_key;
+PARTITION PROCEDURE Set1 ON TABLE fact_exploitatie COLUMN year_key;
+PARTITION PROCEDURE Set2 ON TABLE fact_exploitatie COLUMN year_key;

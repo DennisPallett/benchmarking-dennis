@@ -2,66 +2,37 @@ package procedures;
 
 import org.voltdb.*;
 
-public class Query3 extends AbstractQuery {
-	public final SQLStmt GetParent = new SQLStmt(
-		"SELECT id, naam FROM organisatie WHERE id = ?"
-	);
-	
+public class Query3 extends VoltProcedure {
 	public final SQLStmt GetNumbers = new SQLStmt(
 		" SELECT" +
-		" tenant_key," +
+		" o.id," +
+		" o.naam," +
 		" SUM( f.m_budgetbedrag ) AS begroting," +
 		" SUM( f.m_realisatiebedrag ) AS realisatie  " +
-		" FROM fact_exploitatie AS f, dim_grootboek AS g" +
+		" FROM fact_exploitatie AS f, dim_grootboek AS g, closure_organisatie AS c, organisatie AS o" +
 		" WHERE f.grootboek_key = g.grootboek_key" +
-		" AND " + OrganisationClause +
+		//" AND f.organisatie_key = c.organisatie_key" +
+		//" AND c.parent = ?" +
+		" AND (c.organisatie_key * 1000000 + c.parent) = (f.organisatie_key * 1000000 + ?) " +
+		" AND o.id = c.parent" +
 		" AND (g.gb_verdichting_code_1 = 3 OR g.gb_verdichting_code_1 = 4 OR g.gb_verdichting_code_1 = 5)" +
 		" AND f.month_key >= 06" +
 		" AND f.month_key <= 11" +
 		" AND f.year_key = ?" +
-		" GROUP BY tenant_key" +
-		" ORDER BY tenant_key"		
+		" GROUP BY o.id, o.naam" +
+		" ORDER BY o.id, o.naam",
+		"fact_exploitatie,closure_organisatie,dim_grootboek,organisatie"
 	);
-	
-
 	
 	public VoltTable run (int yearKey, int parentId) throws VoltAbortException {
 		VoltTable[] queryResults;
-		
-		VoltTable result = new VoltTable(
-                new VoltTable.ColumnInfo("id", VoltType.INTEGER),
-                new VoltTable.ColumnInfo("naam", VoltType.STRING),
-                new VoltTable.ColumnInfo("begroting", VoltType.FLOAT),
-                new VoltTable.ColumnInfo("realisatie", VoltType.FLOAT));
+		VoltTable result;		
+
+		voltQueueSQL(GetNumbers, parentId, yearKey);
 				
-		// get finance numbers
-		long[] orgIds = this.getOrgIds(parentId);
-		long min = orgIds[0];
-		long max = orgIds[1];
-		
-		voltQueueSQL(GetNumbers, parentId, min, max, yearKey);
-		
-		// get parent info
-		voltQueueSQL(GetParent, parentId);
-		
 		queryResults = voltExecuteSQL(true);
 		
-		VoltTable numbersTable = queryResults[0];
-		VoltTable orgTable = queryResults[1];		
-		
-		if (orgTable.getRowCount() > 0) {
-			String parentName = orgTable.fetchRow(0).getString("naam");
-			
-			double begroting = numbersTable.fetchRow(0).getDouble("begroting");
-			double realisatie = numbersTable.fetchRow(0).getDouble("realisatie");
-					
-			result.addRow(new Object[] {
-				parentId,
-				parentName,
-				begroting,
-				realisatie
-			});
-		}
+		result = queryResults[0];	
 		
 		return result;
 	}

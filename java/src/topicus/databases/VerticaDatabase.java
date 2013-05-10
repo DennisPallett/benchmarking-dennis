@@ -10,7 +10,9 @@ import java.util.Random;
 
 import org.apache.commons.lang3.StringUtils;
 
+import topicus.benchmarking.AbstractBenchmarkRunner;
 import topicus.benchmarking.BenchmarksScript;
+import topicus.benchmarking.JdbcBenchmarkRunner;
 
 public class VerticaDatabase extends AbstractDatabase {
 	
@@ -30,6 +32,10 @@ public class VerticaDatabase extends AbstractDatabase {
 
 	public String getJdbcUrl() {
 		return "jdbc:vertica://";
+	}
+	
+	public AbstractBenchmarkRunner createBenchmarkRunner () {
+		return new JdbcBenchmarkRunner();
 	}
 			
 	public int getNodeCount(Connection conn) throws SQLException {	

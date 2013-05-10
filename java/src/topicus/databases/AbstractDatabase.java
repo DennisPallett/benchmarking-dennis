@@ -9,6 +9,7 @@ import java.util.Observable;
 
 import topicus.ConsoleScript;
 import topicus.benchmarking.BenchmarksScript;
+import topicus.benchmarking.AbstractBenchmarkRunner;
 
 public abstract class AbstractDatabase extends Observable {
 	protected String name;
@@ -24,6 +25,8 @@ public abstract class AbstractDatabase extends Observable {
 	public abstract void dropTable (Connection conn, String tableName) throws SQLException;
 	public abstract void createTable(Connection conn, DbTable table) throws SQLException;
 	public abstract int[] deployData(Connection conn, String fileName, String tableName) throws SQLException;
+	
+	public abstract AbstractBenchmarkRunner createBenchmarkRunner();
 		
 	public Connection setupConnection (String host) throws SQLException {
 		// setup connection strings
