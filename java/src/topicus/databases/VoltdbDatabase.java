@@ -233,13 +233,18 @@ public class VoltdbDatabase extends AbstractDatabase {
 				
 				try {
 					response = client.callProcedure(procName,  yearKey, parentId);
-				} catch (Exception e) {
+				} catch (ProcCallException e) {
+					response = e.getClientResponse();
 					if (response != null && response.getStatus() == ClientResponse.CONNECTION_TIMEOUT) {
 						timeout = true;
+						owner.printError("Set #" + setNum + " timed out");
 					} else {
 						e.printStackTrace();
 						failed = true;
 					}
+				} catch (Exception e) {
+					e.printStackTrace();
+					failed = true;					
 				}
 				
 				int setTime = (int) (System.currentTimeMillis() - startTime);

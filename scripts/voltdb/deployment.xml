@@ -1,5 +1,5 @@
 <deployment>
-	<cluster hostcount="{NODES}" sitesperhost="3" />
+	<cluster hostcount="{NODES}" sitesperhost="4" />
 
 	<paths>
 		<voltdbroot path="/mnt/voltdb" />

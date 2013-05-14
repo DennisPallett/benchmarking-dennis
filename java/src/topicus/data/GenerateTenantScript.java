@@ -99,8 +99,14 @@ public class GenerateTenantScript extends ConsoleScript {
 			throw new MissingDataFileException("Missing data file `fe_data.tbl` in data directory!");
 		}
 		int i = 0;
+		String tmp = "";
 		while(scan.hasNext()) {
-			lines[i] = scan.next();
+			tmp = scan.next();
+			
+			if (tmp != null && tmp.length() > 0) {
+				lines[i] = tmp;
+			}
+			
 			i++;
 		}
 		
@@ -116,32 +122,60 @@ public class GenerateTenantScript extends ConsoleScript {
 		StringBuilder stringBuffer = new StringBuilder((int)file.length()/3);
 		for(int j=0; j < 4; j++) {
 			for (String line : lines) {
+				if (line == null || line.length() == 0) continue;
+				
 				StringBuilder newLine = new StringBuilder();
 				
 				newLine.append(primaryKey);
 				newLine.append("#");
 				newLine.append(tenantId);
 				newLine.append("#");
-				newLine.append(line.trim());
-				newLine.append("\n");		
+				newLine.append(line.trim());					
 				
 				// replace FK's
-				this._replaceFK(newLine,  "PK_ORG:",  rowCounts.get("org_data.tbl"));
-				this._replaceFK(newLine,  "PK_ADMIN:",  rowCounts.get("adm_data.tbl"));
-				this._replaceFK(newLine,  "PK_KP:",  rowCounts.get("kp_data.tbl"));
-				this._replaceFK(newLine,  "PK_GB:",  rowCounts.get("gb_data.tbl"));
+				this._replaceFK(newLine, "PK_ORG:",  rowCounts.get("org_data.tbl"));
+				this._replaceFK(newLine, "PK_ADMIN:",  rowCounts.get("adm_data.tbl"));
+				this._replaceFK(newLine, "PK_KP:",  rowCounts.get("kp_data.tbl"));
+				this._replaceFK(newLine, "PK_GB:",  rowCounts.get("gb_data.tbl"));
 				
-				int startPos = newLine.indexOf("VALUE:");
-				if (startPos > -1) {
-					int endPos = newLine.indexOf("#", startPos);
+				// replace year
+				int startPos = newLine.indexOf("YEAR:");
+				int endPos = newLine.indexOf("#", startPos);
 					
-					// retrieve value and multiply by random multiplier
+				// retrieve year
+				int year = Integer.parseInt(newLine.substring(startPos+("YEAR:").length(), endPos));
+				
+				// calculate new year
+				int newYear = year + (5 * j);
+				
+				// insert new year into line
+				newLine.replace(startPos, endPos, String.valueOf(newYear));
+				
+				// calculate new tenant_year_key
+				long tenantYearKey = ((tenantId * 10000) + newYear);
+				
+				// replace value
+				startPos = newLine.indexOf("VALUE:");
+				if (startPos > -1) {
+					endPos = newLine.indexOf("#", startPos);
+					
+					// retrieve value
 					double value = Float.parseFloat(newLine.substring(startPos+("VALUE:").length(), endPos));
-					value = value * randFloat;
+					
+					// multiply by random multiplier
+					// original value is used for the first part of #tenant 1
+					// so that the original Carmel data is also within the test data
+					if (tenantId != 1 || j != 0) {
+						value = value * randFloat;
+					}
 					
 					// insert new value into line
 					newLine.replace(startPos, endPos,  String.valueOf(value));
 				}
+				
+				newLine.append("#");
+				newLine.append(tenantYearKey);
+				newLine.append("\n");
 				
 				stringBuffer.append(newLine);
 				

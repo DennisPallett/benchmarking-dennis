@@ -491,6 +491,12 @@ public class DbSchema {
 					.setType(DbColumn.Type.INTEGER)
 					.setAllowNull()
 				);
+			
+			table.addColumn(
+					new DbColumn("tenant_year_key")
+					.setType(DbColumn.Type.INTEGER)
+					.setAllowNull()
+				);
 		
 		return table;		
 	}
