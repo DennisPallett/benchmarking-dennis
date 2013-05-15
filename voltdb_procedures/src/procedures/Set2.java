@@ -18,7 +18,7 @@ public class Set2 extends VoltProcedure {
 			" AND g.gb_verdichting_code_1 = 3" +
 			" AND f.month_key >= 06" +
 			" AND f.month_key <= 11" +
-			" AND f.year_key = ?" +
+			" AND f.tenant_year_key = ?" +
 			" GROUP BY o.id, o.naam" +
 			" ORDER BY o.id, o.naam",
 			"closure_organisatie,fact_exploitatie,dim_grootboek,organisatie"
@@ -38,7 +38,7 @@ public class Set2 extends VoltProcedure {
 			" AND g.gb_verdichting_code_1 = 3" +
 			" AND f.month_key >= 06" +
 			" AND f.month_key <= 11" +
-			" AND f.year_key = ?" +
+			" AND f.tenant_year_key = ?" +
 			" GROUP BY g.gb_verdichting_toonnaam_1, g.gb_verdichting_toonnaam_2" + 
 			" ORDER BY g.gb_verdichting_toonnaam_1, g.gb_verdichting_toonnaam_2",
 			"closure_organisatie,fact_exploitatie,dim_grootboek"
@@ -60,7 +60,7 @@ public class Set2 extends VoltProcedure {
 			" AND g.gb_verdichting_code_1 = 4" +
 			" AND g.gb_verdichting_code_2 = 45" +
 			" AND f.month_key = 10" +
-			" AND f.year_key = ?" +
+			" AND f.tenant_year_key = ?" +
 			" GROUP BY o.id, o.naam" +
 			" ORDER BY o.id, o.naam",
 			"closure_organisatie,fact_exploitatie,dim_grootboek,organisatie"	
@@ -83,19 +83,19 @@ public class Set2 extends VoltProcedure {
 			" AND g.gb_verdichting_code_1 = 3" +
 			" AND f.month_key >= 06" +
 			" AND f.month_key <= 11" +
-			" AND f.year_key = ?" +
+			" AND f.tenant_year_key = ?" +
 			" GROUP BY f.year_key, f.month_key, m.month_name" +
 			" ORDER BY f.year_key, f.month_key, m.month_name",
 			"closure_organisatie,fact_exploitatie,dim_grootboek,month_names"
 	);
 	
-	public VoltTable[] run (int yearKey, int parentId) throws VoltAbortException {
+	public VoltTable[] run (int tenantYearKey, int parentId) throws VoltAbortException {
 		VoltTable[] queryResults;
 		
-		voltQueueSQL(Query1, parentId, yearKey);
-		voltQueueSQL(Query2, parentId, yearKey);
-		voltQueueSQL(Query3, parentId, yearKey);
-		voltQueueSQL(Query4, parentId, yearKey);
+		voltQueueSQL(Query1, parentId, tenantYearKey);
+		voltQueueSQL(Query2, parentId, tenantYearKey);
+		voltQueueSQL(Query3, parentId, tenantYearKey);
+		voltQueueSQL(Query4, parentId, tenantYearKey);
 		
 		queryResults = voltExecuteSQL(true);
 		

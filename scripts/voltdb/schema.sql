@@ -136,15 +136,13 @@ t_source_id INTEGER,
 tenant_year_key INTEGER NOT NULL,
 PRIMARY KEY (dwh_id)
 );
-PARTITION TABLE fact_exploitatie ON COLUMN year_key;
+PARTITION TABLE fact_exploitatie ON COLUMN tenant_year_key;
 
 CREATE INDEX FactOrganisatieHashIdx ON fact_exploitatie (organisatie_key);
 
-CREATE PROCEDURE FROM CLASS procedures.Query1;
 CREATE PROCEDURE FROM CLASS procedures.Set1;
 CREATE PROCEDURE FROM CLASS procedures.Set2;
 CREATE PROCEDURE FROM CLASS procedures.BulkLoad;
 
-PARTITION PROCEDURE Query1 ON TABLE fact_exploitatie COLUMN year_key;
-PARTITION PROCEDURE Set1 ON TABLE fact_exploitatie COLUMN year_key;
-PARTITION PROCEDURE Set2 ON TABLE fact_exploitatie COLUMN year_key;
+PARTITION PROCEDURE Set1 ON TABLE fact_exploitatie COLUMN tenant_year_key;
+PARTITION PROCEDURE Set2 ON TABLE fact_exploitatie COLUMN tenant_year_key;

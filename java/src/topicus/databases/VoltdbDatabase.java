@@ -153,8 +153,10 @@ public class VoltdbDatabase extends AbstractDatabase {
 			while(iter.hasNext()) {
 				String[] setInfo = iter.next();
 				String procName = setInfo[0];
-				String yearKey = setInfo[1];
+				int yearKey = Integer.parseInt(setInfo[1]);
 				String parentId = setInfo[2];
+				
+				long tenantYearKey = (this.userId * 10000) + yearKey;
 				
 				long startTime = System.currentTimeMillis();
 				ClientResponse response = null;
@@ -162,7 +164,7 @@ public class VoltdbDatabase extends AbstractDatabase {
 				boolean failed = false;
 				
 				try {
-					response = client.callProcedure(procName,  yearKey, parentId);
+					response = client.callProcedure(procName,  tenantYearKey, parentId);
 				} catch (ProcCallException e) {
 					response = e.getClientResponse();
 					if (response != null && response.getStatus() == ClientResponse.CONNECTION_TIMEOUT) {
