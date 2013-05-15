@@ -34,6 +34,7 @@ public class DbSchema {
 		table.addColumn(
 			new DbColumn("kp_tenant")
 			.setType(DbColumn.Type.INTEGER)
+			.setTenantKey()
 		);
 		
 		table.addColumn(
@@ -120,6 +121,7 @@ public class DbSchema {
 			table.addColumn(
 				new DbColumn("afnemer")
 				.setType(DbColumn.Type.INTEGER)
+				.setTenantKey()
 			);
 		
 		return table;
@@ -385,6 +387,7 @@ public class DbSchema {
 	public static DbTable FactTable () {
 		DbTable table = new DbTable("fact_exploitatie");
 		table.setPartitionBy("year_key");
+		table.setOrderBy("tenant_key");
 		
 		table.addColumn(
 				new DbColumn("dwh_id")
@@ -395,6 +398,7 @@ public class DbSchema {
 			table.addColumn(
 					new DbColumn("tenant_key")
 					.setType(DbColumn.Type.INTEGER)
+					.setTenantKey()
 				);
 			
 			table.addColumn(
@@ -513,6 +517,7 @@ public class DbSchema {
 			table.addColumn(
 				new DbColumn("gb_tenant")
 				.setType(DbColumn.Type.INTEGER)
+				.setTenantKey()
 			);
 			
 			table.addColumn(
@@ -596,6 +601,7 @@ public class DbSchema {
 		table.addColumn(
 			new DbColumn("a_tenant")
 			.setType(DbColumn.Type.INTEGER)
+			.setTenantKey()
 		);
 		
 		table.addColumn(

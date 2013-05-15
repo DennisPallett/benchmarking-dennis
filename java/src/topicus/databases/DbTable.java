@@ -8,6 +8,8 @@ public class DbTable {
 	
 	protected String partitionBy = null;
 	
+	protected String orderBy = null;
+	
 	public DbTable (String name) {
 		this.name = name;
 	}
@@ -28,6 +30,15 @@ public class DbTable {
 	public DbTable setPartitionBy(String colName) {
 		this.partitionBy = colName;
 		return this;
+	}
+	
+	public DbTable setOrderBy(String colName) {
+		this.orderBy = colName;
+		return this;
+	}
+	
+	public String orderBy () {
+		return this.orderBy;
 	}
 	
 	public String partitionBy() {

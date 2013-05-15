@@ -51,6 +51,9 @@ public abstract class AbstractBenchmarkRunner {
 			query = query.replaceAll(String.valueOf(id), String.valueOf((this.userId-1) * ORG_ROW_COUNT + id));
 		}		
 		
+		// replace tenant ID
+		query = query.replaceAll("%TENANT_ID%", String.valueOf(this.userId));
+		
 		return query;
 	}
 

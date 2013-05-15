@@ -99,6 +99,7 @@
 		<create-executables file="load-tenant" mainClass="topicus.loadtenant.RunLoadTenant" />
 		<create-executables file="unload-tenant" mainClass="topicus.loadtenant.RunUnloadTenant" />
 		<create-executables file="load-schema" mainClass="topicus.loadschema.RunLoadSchema" />
+		<create-executables file="load-base-data" mainClass="topicus.loadschema.RunLoadBaseData" />
 		<create-executables file="process-results" mainClass="topicus.results.RunProcessResults" />
 		<create-executables file="benchmark-instance" mainClass="topicus.benchmarking.RunBenchmarkInstance" />
 		

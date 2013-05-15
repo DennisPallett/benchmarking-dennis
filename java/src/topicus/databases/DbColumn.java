@@ -10,6 +10,8 @@ public class DbColumn {
 	
 	protected boolean isUnique = false;
 	
+	protected boolean isTenantKey = false;
+	
 	protected boolean allowNull = false;
 	
 	protected String foreignTable = null;
@@ -58,6 +60,19 @@ public class DbColumn {
 	
 	public boolean allowNull () {
 		return this.allowNull;
+	}
+	
+	public boolean isTenantKey() {
+		return this.isTenantKey;
+	}
+	
+	public DbColumn setTenantKey() {
+		return this.setTenantKey(true);
+	}
+	
+	public DbColumn setTenantKey(boolean value) {
+		this.isTenantKey = value;
+		return this;
 	}
 	
 	public DbColumn setAllowNull() {
