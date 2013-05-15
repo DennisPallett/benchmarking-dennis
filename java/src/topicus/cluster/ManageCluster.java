@@ -578,6 +578,13 @@ public class ManageCluster {
 		// launch instance
 		RunInstancesResult runInstances = ec2Client.runInstances(request);
 		
+		// wait a short while for the instance to launch
+		try {
+			Thread.sleep(3000);
+		} catch (InterruptedException e) {
+			// don't care
+		}
+		
 		List<Instance> instances = runInstances.getReservation().getInstances();
 		
 		if (instances.size() != 1) {
