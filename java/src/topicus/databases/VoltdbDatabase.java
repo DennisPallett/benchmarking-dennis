@@ -156,6 +156,8 @@ public class VoltdbDatabase extends AbstractDatabase {
 				int yearKey = Integer.parseInt(setInfo[1]);
 				String parentId = setInfo[2];
 				
+				parentId = this._replaceOrgId(parentId);
+				
 				long tenantYearKey = (this.userId * 10000) + yearKey;
 				
 				long startTime = System.currentTimeMillis();
