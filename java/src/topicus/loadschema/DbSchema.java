@@ -387,7 +387,7 @@ public class DbSchema {
 	public static DbTable FactTable () {
 		DbTable table = new DbTable("fact_exploitatie");
 		table.setPartitionBy("year_key");
-		table.setOrderBy("tenant_key");
+		table.setOrderBy("tenant_key, year_key, month_key");
 		
 		table.addColumn(
 				new DbColumn("dwh_id")
