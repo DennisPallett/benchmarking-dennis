@@ -133,7 +133,7 @@ t_factuurnummer VARCHAR(120),
 dwh_modified_date VARCHAR(20) NOT NULL,
 t_source_modified VARCHAR(20),
 t_source_id INTEGER,
-tenant_year_key INTEGER,
+tenant_year_key INTEGER NOT NULL,
 PRIMARY KEY (dwh_id)
 );
 PARTITION TABLE fact_exploitatie ON COLUMN year_key;
