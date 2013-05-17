@@ -1,6 +1,7 @@
 package procedures;
 
 import org.voltdb.*;
+import org.voltdb.VoltProcedure.VoltAbortException;
 
 public class Query8 extends VoltProcedure {
 	public final SQLStmt GetResult = new SQLStmt("SELECT " +
@@ -15,23 +16,22 @@ public class Query8 extends VoltProcedure {
 			" FROM fact_exploitatie AS f, month_names AS m, dim_grootboek AS g, closure_organisatie AS c" +
 			" WHERE f.month_key=m.month" +
 			" AND f.grootboek_key=g.grootboek_key" +
-			//" AND f.organisatie_key = c.organisatie_key" +
-			//" AND c.parent = ?" +
-			" AND (c.organisatie_key * 1000000 + c.parent) = (f.organisatie_key * 1000000 + ?) " +
+			" AND f.organisatie_key = c.organisatie_key" +
+			" AND c.parent = ?" +
 			" AND g.gb_verdichting_code_1 = 3" +
 			" AND f.month_key >= 06" +
 			" AND f.month_key <= 11" +
-			" AND f.year_key = ?" +
+			" AND f.tenant_year_key = ?" +
 			" GROUP BY f.year_key, f.month_key, m.month_name" +
 			" ORDER BY f.year_key, f.month_key, m.month_name",
-			"fact_exploitatie,closure_organisatie,dim_grootboek,month_names"
+			"closure_organisatie,fact_exploitatie,dim_grootboek,month_names"
 	);
 	
-	public VoltTable run (int yearKey, int parentId) throws VoltAbortException {
+	public VoltTable run (int tenantYearKey, int parentId) throws VoltAbortException {
 		VoltTable[] queryResults;
 		VoltTable result;
 		
-		voltQueueSQL(GetResult, parentId, yearKey); 
+		voltQueueSQL(GetResult, parentId, tenantYearKey);
 		queryResults = voltExecuteSQL(true);
 		
 		result = queryResults[0];		

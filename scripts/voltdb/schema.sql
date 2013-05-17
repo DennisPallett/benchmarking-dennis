@@ -140,9 +140,21 @@ PARTITION TABLE fact_exploitatie ON COLUMN tenant_year_key;
 
 CREATE INDEX FactOrganisatieHashIdx ON fact_exploitatie (organisatie_key);
 
-CREATE PROCEDURE FROM CLASS procedures.Set1;
-CREATE PROCEDURE FROM CLASS procedures.Set2;
+CREATE PROCEDURE FROM CLASS procedures.Query1;
+CREATE PROCEDURE FROM CLASS procedures.Query2;
+CREATE PROCEDURE FROM CLASS procedures.Query3;
+CREATE PROCEDURE FROM CLASS procedures.Query4;
+CREATE PROCEDURE FROM CLASS procedures.Query5;
+CREATE PROCEDURE FROM CLASS procedures.Query6;
+CREATE PROCEDURE FROM CLASS procedures.Query7;
+CREATE PROCEDURE FROM CLASS procedures.Query8;
 CREATE PROCEDURE FROM CLASS procedures.BulkLoad;
 
-PARTITION PROCEDURE Set1 ON TABLE fact_exploitatie COLUMN tenant_year_key;
-PARTITION PROCEDURE Set2 ON TABLE fact_exploitatie COLUMN tenant_year_key;
+PARTITION PROCEDURE Query1 ON TABLE fact_exploitatie COLUMN tenant_year_key;
+PARTITION PROCEDURE Query2 ON TABLE fact_exploitatie COLUMN tenant_year_key;
+PARTITION PROCEDURE Query3 ON TABLE fact_exploitatie COLUMN tenant_year_key;
+PARTITION PROCEDURE Query4 ON TABLE fact_exploitatie COLUMN tenant_year_key;
+PARTITION PROCEDURE Query5 ON TABLE fact_exploitatie COLUMN tenant_year_key;
+PARTITION PROCEDURE Query6 ON TABLE fact_exploitatie COLUMN tenant_year_key;
+PARTITION PROCEDURE Query7 ON TABLE fact_exploitatie COLUMN tenant_year_key;
+PARTITION PROCEDURE Query8 ON TABLE fact_exploitatie COLUMN tenant_year_key;

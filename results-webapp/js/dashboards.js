@@ -2,7 +2,7 @@ var TENANTS = [1, 2, 5, 10, 20, 35, 50];
 var USERS = [1, 2, 5, 10, 20, 35, 50];
 var NODES = [1, 2, 3];
 
-var PRODUCTS = {'vertica': 'HP Vertica'};
+var PRODUCTS = {'vertica': 'HP Vertica', 'voltdb': 'VoltDB'};
 
 $(window).addEvent('load', function () {
 	var app = new DashboardApp();

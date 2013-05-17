@@ -5,6 +5,7 @@ import java.io.InputStream;
 import java.net.UnknownHostException;
 import java.sql.CallableStatement;
 import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -12,6 +13,7 @@ import java.text.DecimalFormat;
 import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
 import java.util.regex.Matcher;
@@ -34,6 +36,8 @@ import com.jcraft.jsch.Session;
 import topicus.benchmarking.AbstractBenchmarkRunner;
 import topicus.benchmarking.BenchmarksScript;
 import topicus.benchmarking.JdbcBenchmarkRunner;
+import topicus.benchmarking.JdbcBenchmarkRunner.QueryResult;
+import topicus.benchmarking.JdbcBenchmarkRunner.QueryRunner;
 
 public class VoltdbDatabase extends AbstractDatabase {	
 	public VoltdbDatabase () {
@@ -135,6 +139,8 @@ public class VoltdbDatabase extends AbstractDatabase {
 	
 	public class BenchmarkRunner extends AbstractBenchmarkRunner {
 		protected Client client;
+		
+		protected Client[] clients = new Client[NR_OF_QUERIES];
 
 		@Override
 		public void prepareBenchmark() throws PrepareException {
@@ -158,50 +164,67 @@ public class VoltdbDatabase extends AbstractDatabase {
 				
 				parentId = this._replaceOrgId(parentId);
 				
-				long tenantYearKey = (this.userId * 10000) + yearKey;
+				int parentIdNum = Integer.parseInt(parentId);
 				
+				int tenantYearKey = (this.userId * 10000) + yearKey;
+				
+				int[] times = {0,0,0,0};
+				
+				List<Thread> threads = new LinkedList<Thread>();
+				List<QueryRunner> queryRunners = new LinkedList<QueryRunner>();	
+				
+				int startId = 1;
+				if (procName.toLowerCase().equals("set1") == false) {
+					startId = 5;
+				}
+				
+				// create queryRunners and separate threads
+				for(int i=startId; i < startId+4; i++) {
+					QueryRunner qr = new QueryRunner(i, tenantYearKey, parentIdNum);
+					queryRunners.add(qr);
+					Thread t = new Thread(qr);
+					threads.add(t);
+				}
+				
+				// start all queries
 				long startTime = System.currentTimeMillis();
-				ClientResponse response = null;
-				boolean timeout = false;
-				boolean failed = false;
+				for(int j=0; j < threads.size(); j++) {
+					threads.get(j).start();
+				}
 				
-				try {
-					response = client.callProcedure(procName,  tenantYearKey, parentId);
-				} catch (ProcCallException e) {
-					response = e.getClientResponse();
-					if (response != null && response.getStatus() == ClientResponse.CONNECTION_TIMEOUT) {
-						timeout = true;
-						owner.printError("Set #" + setNum + " timed out");
-					} else {
-						e.printStackTrace();
-						failed = true;
+				// get execution time for each query
+				for(int t = 0; t < queryRunners.size(); t++) {
+					// Wait for thread to finish
+					try {
+						threads.get(t).join();
+					} catch (InterruptedException e) {
+						// don't care
 					}
-				} catch (Exception e) {
-					e.printStackTrace();
-					failed = true;					
-				}
-				
+										
+					QueryRunner queryRunner = queryRunners.get(t);
+					
+					if (queryRunner.failed == false) {
+						times[queryRunner.getQueryId() % NR_OF_QUERIES] = queryRunner.runTime; 
+					}
+					
+					if (queryRunner.runTime == BenchmarksScript.QUERY_TIMEOUT) {
+						owner.printError("Query #" + t + " of set #" + setNum + " timed out");
+					}
+				}				
+							
 				int setTime = (int) (System.currentTimeMillis() - startTime);
-				int queryTime = setTime/4;
-				
-				if (timeout) {
-					setTime = BenchmarksScript.QUERY_TIMEOUT;
-					queryTime = BenchmarksScript.QUERY_TIMEOUT;
-				}
-				
+
 				// save results
-				if (failed == false) {
-					this.owner.addResult(
-						this.userId, 
-						iteration, 
-						setNum,
-						queryTime,
-						queryTime,
-						queryTime,
-						queryTime,
-						setTime
-					);
-				}
+				this.owner.addResult(
+					this.userId, 
+					iteration, 
+					setNum,
+					times[0],
+					times[1],
+					times[2],
+					times[3],
+					setTime
+				);
 				
 				setNum++;
 				
@@ -219,35 +242,101 @@ public class VoltdbDatabase extends AbstractDatabase {
 
 		@Override
 		public void finishBenchmark() {
-			this.owner.printLine("User #" + this.userId + " closing client");
+			this.owner.printLine("User #" + this.userId + " closing clients");
+			for(int i=0; i < NR_OF_QUERIES; i++) {
+				try {
+					clients[i].close();
+				} catch (InterruptedException e) {
+					// don't care
+				}
+			}
+			this.owner.printLine("All clients for user #" + this.userId + " closed");					
+		}
+		
+		protected int executeQuery(int queryId, int tenantYearKey, int parentId) throws Exception {					
+			// execute query
+			int runTime = 0;
+						
+			Client client = clients[queryId % NR_OF_QUERIES];
+					
+			long startTime = System.currentTimeMillis();
+			ClientResponse response = null;
+			
+			String procName = "Query" + queryId;
 			
 			try {
-				client.close();
-			} catch (InterruptedException e) {
-				// don't care
+				response = client.callProcedure(procName,  tenantYearKey, parentId);				
+				runTime = (int) ((int) System.currentTimeMillis() - startTime);
+			} catch (ProcCallException e) {
+				response = e.getClientResponse();
+				if (response != null && response.getStatus() == ClientResponse.CONNECTION_TIMEOUT) {
+					runTime = BenchmarksScript.QUERY_TIMEOUT;
+				} else {
+					throw e;
+				}
+			} catch (Exception e) {
+				throw e;					
 			}
-					
-			this.owner.printLine("Client for user #" + this.userId + " closed");			
+			
+			return runTime;
 		}
 		
 		protected void setupClient () throws UnknownHostException, IOException {
-			// determine node
-			int node = (this.userId % this.nodes) + 1;
-						
-			this.owner.printLine("Setting up client for user #" + this.userId + " to node" + node);
-			
 			// setup config
 			ClientConfig config = new ClientConfig(null, null);
 			config.setProcedureCallTimeout(BenchmarksScript.QUERY_TIMEOUT);
 			config.setConnectionResponseTimeout(BenchmarksScript.QUERY_TIMEOUT);
-			
-			// create Client object
-			client = ClientFactory.createClient(config);
 						
-			// create connection
-			client.createConnection("node" + node);
+			this.owner.printLine("Setting up clients for user #" + this.userId);
+			
+			// setup NR_OF_QUERIES connections (1 for each query)
+			for(int i=0; i < NR_OF_QUERIES; i++) {
+				// determine node
+				int node = (i % this.nodes) + 1;
+				
+				this.owner.printLine("Setting up client #" + (i+1) + " to node" + node + " for user #" + this.userId);
+				
+				// create Client object
+				clients[i] = ClientFactory.createClient(config);
+							
+				// create connection
+				clients[i].createConnection("node" + node);
+							
+				this.owner.printLine("Client #" + (i+1) + " setup for user #" + this.userId);
+			}
+			
 		}
 		
+		public class QueryRunner implements Runnable {		
+			private int queryId;
+			private int tenantYearKey;
+			private int parentId;
+			
+			public boolean failed = false;
+			public int runTime;
+
+			public QueryRunner(int queryId, int tenantYearKey, int parentId) {			
+				this.queryId = queryId;
+				this.tenantYearKey = tenantYearKey;
+				this.parentId = parentId;
+				
+			}
+			
+			public int getQueryId () {
+				return queryId;
+			}
+
+			public void run() {		
+				// Now execute the query
+				try {
+					runTime = BenchmarkRunner.this.executeQuery(this.queryId, this.tenantYearKey, this.parentId);
+				} catch(Exception e) {
+					BenchmarkRunner.this.owner.printError("Error in query #" + this.queryId + ": " + e.getMessage());
+					failed = true;
+				}
+			}
+		}
+				
 	}
 
 
