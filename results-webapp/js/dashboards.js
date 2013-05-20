@@ -17,6 +17,7 @@ var DashboardApp = new Class({
 	initialize: function () {
 		this.dashboards = [
 			new ResultsOverviewDashboard(),
+			new ResultsComparisonDashboard(),
 			new FastestOverviewDashboard(),
 			new TenantGraphDashboard(),
 			new LoadTimesPerTenantDashboard(),
@@ -262,6 +263,16 @@ var Dashboard = new Class({
 
 		USERS.each(function (user) {
 			select.adopt(new Element('option', {'html': user, 'value': user}));
+		});
+
+		return select;
+	},
+
+	tenantsOption: function () {
+		var select = new Element('select', {'name': 'tenants'});
+
+		TENANTS.each(function (tenant) {
+			select.adopt(new Element('option', {'html': tenant, 'value': tenant}));
 		});
 
 		return select;

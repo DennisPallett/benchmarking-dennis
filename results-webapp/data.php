@@ -17,6 +17,7 @@ class DashboardsApplication {
 		$this->_setupDbConnection();
 
 		$this->addDashboard('results-overview', new ResultsOverviewDashboard());
+		$this->addDashboard('results-comparison', new ResultsComparisonDashboard());
 		$this->addDashboard('fastest-overview', new FastestOverviewDashboard());
 		$this->addDashboard('tenant-graph', new TenantGraphDashboard());
 		$this->addDashboard('loadtimes-per-tenant', new LoadtimesPerTenantDashboard());
@@ -211,6 +212,38 @@ class ResultsOverviewDashboard extends Dashboard {
 			$nodes = $row['benchmark_nodes'];
 
 			$ret[$tenants][$users][$nodes] = array(
+				'avg_querytime'		=> $row['benchmark_avg_querytime'],
+				'avg_settime'		=> $row['benchmark_avg_settime'],
+				'failed_querycount'	=> $row['benchmark_failed_querycount']
+			);
+
+		}
+
+		return $ret;
+	}
+}
+
+class ResultsComparisonDashboard extends Dashboard {
+	
+	public function loadData() {
+		$q = $this->db->prepare("
+			SELECT * FROM benchmark
+			WHERE benchmark_tenants = :tenants AND benchmark_users = :users
+		");
+
+		$q->bindValue(':users', intval($this->getOptionValue('users', 1)));
+		$q->bindValue(':tenants', intval($this->getOptionValue('tenants', 1)));
+		$q->execute();
+
+		$results = $q->fetchAll(PDO::FETCH_ASSOC);
+
+		$ret = array();
+
+		foreach($results as $row) {
+			$productId = $row['benchmark_product'];
+			$nodes = $row['benchmark_nodes'];			
+
+			$ret[$productId][$nodes] = array(
 				'avg_querytime'		=> $row['benchmark_avg_querytime'],
 				'avg_settime'		=> $row['benchmark_avg_settime'],
 				'failed_querycount'	=> $row['benchmark_failed_querycount']
