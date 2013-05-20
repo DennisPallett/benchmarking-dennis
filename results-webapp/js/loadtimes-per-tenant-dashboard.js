@@ -51,7 +51,7 @@ var LoadTimesPerTenantDashboard = new Class({
                 text: 'Loading times per tenant'
             },
             subtitle: {
-                text:  "The load rate for tenants per node for " + PRODUCTS[this.getOptionValue('product')]
+                text:  "The load rate for tenants per node for " + this.getProductByType(this.getOptionValue('product')).name
             },
             xAxis: {
                 categories: ['1-10', '11-20', '21-30', '31-40', '41-50'],

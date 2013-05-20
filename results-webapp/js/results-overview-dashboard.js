@@ -47,7 +47,7 @@ var ResultsOverviewDashboard = new Class({
 	getHtml: function (data) {
 		var container = new Element('div');
 
-		container.adopt(new Element('h2', {'html': 'Results overview for ' + PRODUCTS[this.getOptionValue('product')]}));
+		container.adopt(new Element('h2', {'html': 'Results overview for ' + this.getProductByType(this.getOptionValue('product')).name}));
 
 		var table = new Element('table', {'styles': {'text-align': 'center'}});
 		var header = new Element('thead');

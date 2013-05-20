@@ -46,7 +46,7 @@ var TenantGraphDashboard = new Class({
 			subtitle += 's';
 		}
 		subtitle += ' up to ' + this.getOptionValue('up_to_tenants') + ' tenants';
-		subtitle += ' for ' + PRODUCTS[this.getOptionValue('product')];
+		subtitle += ' for ' + this.getProductByType(this.getOptionValue('product')).name;
 
 		var tenantCats = [];
 		var upTo = Number.from(this.getOptionValue('up_to_tenants'));

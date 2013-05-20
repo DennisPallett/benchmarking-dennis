@@ -60,6 +60,7 @@ public class ManageCluster {
 	
 	public static final String AMI_ID_EBS = "ami-64636a10";
 	public static final String AMI_ID = "ami-5a60692e";
+	public static final String AMI_ID_HVM = "ami-66636a12";
 	
 	public static final String TAG_KEY = "benchmark";
 	
@@ -446,7 +447,7 @@ public class ManageCluster {
 	
 	public boolean validateType(String type) {
 		type = type.toLowerCase();
-		return (type.equals("t1.micro") || type.equals("m1.medium") || type.equals("m1.large") || type.equals("m1.xlarge"));
+		return (type.equals("t1.micro") || type.equals("m1.medium") || type.equals("m1.large") || type.equals("m1.xlarge") || type.equals("cc2.8xlarge"));
 	}
 	
 	public void updateClusterInfo () {
@@ -521,6 +522,8 @@ public class ManageCluster {
 		// set image 
 		if (instanceType.equals("t1.micro")) {
 			request.withImageId(AMI_ID_EBS);
+		} else if (instanceType.equals("cc2.8xlarge")) {
+			request.withImageId(AMI_ID_HVM);
 		} else {
 			request.withImageId(AMI_ID);
 		}

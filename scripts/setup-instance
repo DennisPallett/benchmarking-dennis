@@ -34,6 +34,9 @@ service ntp restart > /dev/null
 # create benchmarking structure
 mkdir -p /benchmarking/
 
+# could be useful later when mounting tenant data EBS
+mkdir -p /tenant-data/
+
 cd /benchmarking/
 
 # download tools and unzip

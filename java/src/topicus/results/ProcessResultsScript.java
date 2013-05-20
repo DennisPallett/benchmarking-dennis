@@ -38,8 +38,10 @@ public class ProcessResultsScript extends ConsoleScript {
 	
 	protected int[] instanceBenchmarks = new int[100];
 	
+	protected String alias = null;
+	
 	public void run () throws Exception {
-		printLine("Started-up resutls processing tool");	
+		printLine("Started-up results processing tool");	
 				
 		this._setOptions();
 		
@@ -466,6 +468,14 @@ public class ProcessResultsScript extends ConsoleScript {
 		
 		this.doOverwrite = cliArgs.hasOption("overwrite");
 		
+		alias = cliArgs.getOptionValue("alias");
+		if (alias == null || alias.length() == 0) {
+			alias = null;
+		}
+		if (alias != null) {
+			printLine("Using alias: " + alias);
+		}
+		
 		String dbUser = cliArgs.getOptionValue("user", "root");		
 		String dbPassword = cliArgs.getOptionValue("password", "");
 		String dbName = cliArgs.getOptionValue("database", "benchmarking_results");
@@ -487,7 +497,12 @@ public class ProcessResultsScript extends ConsoleScript {
 	protected int getProductId(String type) throws SQLException {
 		// find product id
 		PreparedStatement q = conn.prepareStatement("SELECT product_id FROM product WHERE product_type = ?");
-		q.setString(1,  type);
+		
+		if (alias == null) {
+			q.setString(1,  type);
+		} else {
+			q.setString(1,  alias);
+		}
 		
 		q.execute();
 		ResultSet result = q.getResultSet(); 

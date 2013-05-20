@@ -17,6 +17,7 @@ class DashboardsApplication {
 		$this->_setupDbConnection();
 
 		$this->addDashboard('results-overview', new ResultsOverviewDashboard());
+		$this->addDashboard('fastest-overview', new FastestOverviewDashboard());
 		$this->addDashboard('tenant-graph', new TenantGraphDashboard());
 		$this->addDashboard('loadtimes-per-tenant', new LoadtimesPerTenantDashboard());
 		$this->addDashboard('scalability-score-table', new ScalabilityScoreTableDashboard());
@@ -67,8 +68,22 @@ class DashboardsApplication {
 		$options = $dashboard->getOptionsUsed();
 		$options['FAIL_LIMIT'] = FAIL_LIMIT;
 
+		// get products in database
+		$q = $this->db->prepare("SELECT * FROM product");
+		$q->execute();
 
-		$ret = array('data' => $data, 'options' => $options);
+		$results = $q->fetchAll();
+
+		$products = array();
+		foreach($results as $row) {
+			$products[] = array(
+				'id' => $row['product_id'], 
+				'type' => $row['product_type'], 
+				'name' => $row['product_name']
+			);
+		}
+
+		$ret = array('data' => $data, 'options' => $options, 'products' => $products);
 		return $ret;
 	}
 
@@ -200,6 +215,55 @@ class ResultsOverviewDashboard extends Dashboard {
 				'avg_settime'		=> $row['benchmark_avg_settime'],
 				'failed_querycount'	=> $row['benchmark_failed_querycount']
 			);
+
+		}
+
+		return $ret;
+	}
+
+}
+
+class FastestOverviewDashboard extends Dashboard {
+	
+	public function loadData() {
+		$q = $this->db->prepare("
+			SELECT
+			b1.benchmark_tenants, 
+			b1.benchmark_users,
+			b1.benchmark_nodes,
+			(
+				SELECT product_name FROM benchmark AS b2 
+				INNER JOIN product ON product_id = benchmark_product
+				WHERE b2.benchmark_avg_querytime = MIN(b1.benchmark_avg_querytime)
+				AND b2.benchmark_tenants = b1.benchmark_tenants
+				AND b2.benchmark_users = b1.benchmark_users
+				AND b2.benchmark_nodes = b2.benchmark_nodes
+			) AS fastest_product_query,
+			(
+				SELECT product_name FROM benchmark AS b2 
+				INNER JOIN product ON product_id = benchmark_product
+				WHERE b2.benchmark_avg_settime = MIN(b1.benchmark_avg_settime)
+				AND b2.benchmark_tenants = b1.benchmark_tenants
+				AND b2.benchmark_users = b1.benchmark_users
+				AND b2.benchmark_nodes = b2.benchmark_nodes
+			) AS fastest_product_set
+			FROM benchmark AS b1
+			GROUP BY b1.benchmark_tenants, b1.benchmark_users, b1.benchmark_nodes
+		");
+
+		$q->execute();
+
+		$results = $q->fetchAll(PDO::FETCH_ASSOC);
+
+		$ret = array();
+
+		foreach($results as $row) {
+			$key = $row['benchmark_tenants'] . '-' . $row['benchmark_users'] . '-' . $row['benchmark_nodes'];
+			$tenants = $row['benchmark_tenants'];
+			$users = $row['benchmark_users'];
+			$nodes = $row['benchmark_nodes'];
+
+			$ret[$tenants][$users][$nodes] = $row;
 
 		}
 

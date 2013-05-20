@@ -2,8 +2,6 @@ var TENANTS = [1, 2, 5, 10, 20, 35, 50];
 var USERS = [1, 2, 5, 10, 20, 35, 50];
 var NODES = [1, 2, 3];
 
-var PRODUCTS = {'vertica': 'HP Vertica', 'voltdb': 'VoltDB'};
-
 $(window).addEvent('load', function () {
 	var app = new DashboardApp();
 });
@@ -19,6 +17,7 @@ var DashboardApp = new Class({
 	initialize: function () {
 		this.dashboards = [
 			new ResultsOverviewDashboard(),
+			new FastestOverviewDashboard(),
 			new TenantGraphDashboard(),
 			new LoadTimesPerTenantDashboard(),
 			new ScalabilityScoreTableDashboard()
@@ -156,11 +155,15 @@ var DashboardApp = new Class({
 	showDashboard: function (dashboard, json) {
 		$('loading').setStyle('display', 'none');
 
+		dashboard.setProducts(json.products);
+
 		this.currDashboard = dashboard;
 
 		var options = dashboard.getOptions();
 
 		dashboard.setOptionValues(json.options);
+		
+
 		var html = dashboard.getHtml(json.data);
 
 		if (html instanceof Object) {
@@ -216,9 +219,26 @@ var DashboardApp = new Class({
 
 var Dashboard = new Class({
 	optionValues: {},
+	productList: [],
 
 	setOptionValues: function (optionValues) {
 		this.optionValues = optionValues;
+	},
+
+	setProducts: function (productList) {
+		this.productList = productList;
+	},
+
+	getProductByType: function (type) {
+		var findProduct = null;
+
+		Array.each(this.productList, function (product) {
+			if (product.type == type) {
+				findProduct = product;
+			}
+		});
+
+		return findProduct;
 	},
 
 	getOptionValue: function (key, defaultValue) {
@@ -250,8 +270,8 @@ var Dashboard = new Class({
 	productOption: function () {
 		var select = new Element('select', {'name': 'product'});
 
-		Object.each(PRODUCTS, function (label, key) {
-			select.adopt(new Element('option', {'html': label, 'value': key}));
+		Object.each(this.productList, function (product) {
+			select.adopt(new Element('option', {'html': product.name, 'value': product.type}));
 		});
 
 		return select;

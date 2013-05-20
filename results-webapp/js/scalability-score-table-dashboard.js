@@ -60,7 +60,7 @@ var ScalabilityScoreTableDashboard = new Class({
 	getHtml: function (data) {
 		var container = new Element('div');
 
-		container.adopt(new Element('h2', {'html': 'Scalability score table for ' + PRODUCTS[this.getOptionValue('product')]}));
+		container.adopt(new Element('h2', {'html': 'Scalability score table for ' + this.getProductByType(this.getOptionValue('product')).name}));
 
 		var score = Number.from(data['query_score']);
 		score = score.format({

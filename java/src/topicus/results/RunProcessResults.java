@@ -54,6 +54,14 @@ public class RunProcessResults extends RunConsoleScript {
 		
 		options.addOption(
 				OptionBuilder
+				.hasArg()
+				.withDescription("Specify an alias for the product type in the filename")
+				.withLongOpt("alias")
+				.create()
+		);
+		
+		options.addOption(
+				OptionBuilder
 				.hasArg(false)
 				.withDescription("Enable automatic overwriting of old results in database")
 				.withLongOpt("overwrite")
