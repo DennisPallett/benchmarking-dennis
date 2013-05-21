@@ -132,6 +132,8 @@ public class LoadTenantScript extends AbstractTenantScript {
 				this.tenantDirectory += "/";
 		}
 		
+		this.tenantDirectory += this.tenantId + "/";
+		
 		this.printLine("Tenant directory set to: " + this.tenantDirectory);
 				
 		this.printLine("Getting node count");

@@ -45,22 +45,7 @@ public abstract class DatabaseScript extends ConsoleScript implements Observer {
 			this._loadDbConfig();
 		}
 		
-		// setup connection strings
-		String url = this.database.getJdbcUrl() + "node1:" + this.dbPort;
-		if (this.dbName.length() > 0) {
-			url += "/" + this.dbName;
-		}
-		this.printLine("Connection string: " + url);
-					
-		// setup connection
-		Connection conn = null;
-		if (this.dbUser.length() > 0 && this.dbPassword.length() > 0) {
-			conn = DriverManager.getConnection(url, this.dbUser, this.dbPassword);
-		} else {
-			conn = DriverManager.getConnection(url);
-		}
-		
-		return conn;
+		return this.database.setupConnection("node1");
 	}
 
 	protected void _loadDbConfig () throws Exception {

@@ -78,10 +78,9 @@ public abstract class AbstractTenantScript extends DatabaseScript {
 			
 			// check if table even has data
 			try {
-				PreparedStatement q = conn.prepareStatement("SELECT " + tenantField + " FROM "
-										+ tableName + " WHERE " + tenantField + " = ? ORDER BY " + tenantField + " ASC LIMIT 1");
-				q.setInt(1,  tenantId);
-				q.execute();
+				Statement q = conn.createStatement();
+				q.execute("SELECT " + tenantField + " FROM "
+						+ tableName + " WHERE " + tenantField + " = " + tenantId + " ORDER BY " + tenantField + " ASC LIMIT 1");
 				ResultSet result = q.getResultSet();
 				
 				if (result.next() == false) {
@@ -90,6 +89,8 @@ public abstract class AbstractTenantScript extends DatabaseScript {
 				}
 			} catch (SQLException e) {
 				// don't care
+				e.printStackTrace();
+				throw e;
 			}
 						
 			this.manageTenant.deleteDataFromTable(tableName, tenantField, this.tenantId);

@@ -9,7 +9,7 @@ public class RunLoadSchema extends RunDatabaseScript {
 	public RunLoadSchema () {
 		super();
 		validTypes.add("vertica");
-		validTypes.add("voltdb");
+		validTypes.add("citusdb");
 			
 		options.addOption(
 				OptionBuilder
@@ -33,7 +33,7 @@ public class RunLoadSchema extends RunDatabaseScript {
 		
 		LoadSchemaScript loader = null;
 		
-		if (this.type.equals("vertica")) {
+		if (this.type.equals("vertica") || this.type.equals("citusdb")) {
 			loader = new LoadSchemaScript(this.type, this.database);
 		} else if(this.type.equals("voltdb")) {
 			loader = new LoadSchemaVoltdbScript(this.type, this.database);

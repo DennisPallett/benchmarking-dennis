@@ -297,7 +297,41 @@ class FastestOverviewDashboard extends Dashboard {
 			$nodes = $row['benchmark_nodes'];
 
 			$ret[$tenants][$users][$nodes] = $row;
+		}
 
+		$q = $this->db->prepare("
+			SELECT
+			b1.benchmark_tenants, 
+			b1.benchmark_users,
+			(
+				SELECT product_name FROM benchmark AS b2 
+				INNER JOIN product ON product_id = benchmark_product
+				WHERE b2.benchmark_avg_querytime = MIN(b1.benchmark_avg_querytime)
+				AND b2.benchmark_tenants = b1.benchmark_tenants
+				AND b2.benchmark_users = b1.benchmark_users
+				AND b2.benchmark_nodes = b2.benchmark_nodes
+			) AS fastest_product_query,
+			(
+				SELECT product_name FROM benchmark AS b2 
+				INNER JOIN product ON product_id = benchmark_product
+				WHERE b2.benchmark_avg_settime = MIN(b1.benchmark_avg_settime)
+				AND b2.benchmark_tenants = b1.benchmark_tenants
+				AND b2.benchmark_users = b1.benchmark_users
+				AND b2.benchmark_nodes = b2.benchmark_nodes
+			) AS fastest_product_set
+			FROM benchmark AS b1
+			GROUP BY b1.benchmark_tenants, b1.benchmark_users
+		");
+
+		$q->execute();
+
+		$results = $q->fetchAll(PDO::FETCH_ASSOC);
+
+		foreach($results as $row) {
+			$tenants = $row['benchmark_tenants'];
+			$users = $row['benchmark_users'];
+
+			$ret[$tenants][$users]['overall'] = $row;
 		}
 
 		return $ret;

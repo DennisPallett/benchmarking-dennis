@@ -314,7 +314,7 @@ public class AllBenchmarksScript extends DatabaseScript {
 		args.add(this.type);
 		
 		args.add("--tenant-data"); 
-		args.add(this.tenantDirectory + tenantId + "/");
+		args.add(this.tenantDirectory);
 		
 		args.add("--tenant-id"); 
 		args.add(String.valueOf(tenantId));

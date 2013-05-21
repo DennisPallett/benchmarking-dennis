@@ -37,7 +37,7 @@ public abstract class AbstractDatabase extends Observable {
 					
 		// setup connection
 		Connection conn = null;
-		if (this.user.length() > 0 && this.password.length() > 0) {
+		if (this.user.length() > 0) {
 			conn = DriverManager.getConnection(url, this.user, this.password);
 		} else {
 			conn = DriverManager.getConnection(url);

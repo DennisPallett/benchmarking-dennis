@@ -40,6 +40,7 @@ var FastestOverviewDashboard = new Class({
 		headRow.adopt(new Element('th', {'html': '1 node', 'colspan': '2'}));
 		headRow.adopt(new Element('th', {'html': '2 nodes', 'colspan': '2'}));
 		headRow.adopt(new Element('th', {'html': '3 nodes', 'colspan': '2'}));
+		headRow.adopt(new Element('th', {'html': 'Overall', 'colspan': '2'}));
 
 		header.adopt(headRow);
 
@@ -53,6 +54,10 @@ var FastestOverviewDashboard = new Class({
 			subHeadRow.adopt(new Element('td', {'html': 'Avg query time'}));
 			subHeadRow.adopt(new Element('td', {'html': 'Avg set time'}));
 		});
+
+		subHeadRow.adopt(new Element('td', {'html': 'Avg query time'}));
+		subHeadRow.adopt(new Element('td', {'html': 'Avg set time'}));
+
 
 		table.adopt(subHeadRow);
 
@@ -75,6 +80,8 @@ var FastestOverviewDashboard = new Class({
 					row.adopt(new Element('td', {'html': this._getNodeResult(data, tenant, user, 2, 'fastest_product_set')}));
 					row.adopt(new Element('td', {'html': this._getNodeResult(data, tenant, user, 3, 'fastest_product_query')}));
 					row.adopt(new Element('td', {'html': this._getNodeResult(data, tenant, user, 3, 'fastest_product_set')}));
+					row.adopt(new Element('td', {'html': this._getNodeResult(data, tenant, user, 'overall', 'fastest_product_query')}));
+					row.adopt(new Element('td', {'html': this._getNodeResult(data, tenant, user, 'overall', 'fastest_product_set')}));
 
 					body.adopt(row);
 				}

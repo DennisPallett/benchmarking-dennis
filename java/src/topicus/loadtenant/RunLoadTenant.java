@@ -10,6 +10,7 @@ public class RunLoadTenant extends RunDatabaseScript {
 		super();
 		this.validTypes.add("vertica");
 		this.validTypes.add("voltdb");
+		this.validTypes.add("citusdb");
 		
 		options.addOption(
 				OptionBuilder
