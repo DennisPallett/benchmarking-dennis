@@ -51,20 +51,7 @@ public class GreenplumDatabase extends AbstractDatabase {
 	}
 			
 	public int getNodeCount(Connection conn) throws SQLException {	
-		Statement stmt = conn.createStatement();
-		ResultSet result = null;
-		
-		result = stmt.executeQuery("SELECT info_value AS node_count FROM info WHERE info_key = 'node_count';");
-		
-		// retrieve node count
-		result.next();
-		int nodeCount = result.getInt("node_count");
-		
-		// close result
-		result.close();
-		stmt.close();
-		
-		return nodeCount;
+		return 1;
 	}
 	
 	public int[] deployData(Connection conn, String fileName, String tableName)

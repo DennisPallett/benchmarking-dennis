@@ -140,3 +140,4 @@ PARTITION BY LIST (tenant_year_key)
  PARTITION dummy VALUES ('0')
 );
 
+CREATE INDEX month_idx ON fact_exploitatie (month_key);
