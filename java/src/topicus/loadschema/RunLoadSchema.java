@@ -10,6 +10,7 @@ public class RunLoadSchema extends RunDatabaseScript {
 		super();
 		validTypes.add("vertica");
 		validTypes.add("citusdb");
+		validTypes.add("greenplum");
 			
 		options.addOption(
 				OptionBuilder
@@ -33,10 +34,12 @@ public class RunLoadSchema extends RunDatabaseScript {
 		
 		LoadSchemaScript loader = null;
 		
-		if (this.type.equals("vertica") || this.type.equals("citusdb")) {
+		if (this.type.equals("vertica") || this.type.equals("citusdb") || this.type.equals("greenplum")) {
 			loader = new LoadSchemaScript(this.type, this.database);
 		} else if(this.type.equals("voltdb")) {
 			loader = new LoadSchemaVoltdbScript(this.type, this.database);
+		} else {
+			throw new Exception("Unknown type: " + this.type);
 		}
 		
 		loader.setCliArgs(cliArgs);

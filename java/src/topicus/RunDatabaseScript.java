@@ -9,6 +9,7 @@ import org.apache.commons.cli.OptionBuilder;
 import org.apache.commons.io.FileUtils;
 
 import topicus.databases.AbstractDatabase;
+import topicus.databases.GreenplumDatabase;
 import topicus.databases.VerticaDatabase;
 import topicus.databases.VoltdbDatabase;
 import topicus.databases.CitusdbDatabase;
@@ -81,6 +82,8 @@ public class RunDatabaseScript extends RunConsoleScript {
 			database = new VoltdbDatabase();
 		} else if (type.equals("citusdb")) {
 			database = new CitusdbDatabase();
+		} else if (type.equals("greenplum")) {
+			database = new GreenplumDatabase();
 		} else {
 			throw new Exception("Unknown database type specified");
 		}

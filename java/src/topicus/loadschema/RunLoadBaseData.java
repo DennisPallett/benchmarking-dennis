@@ -11,6 +11,7 @@ public class RunLoadBaseData extends RunDatabaseScript {
 		validTypes.add("vertica");
 		validTypes.add("voltdb");
 		validTypes.add("citusdb");
+		validTypes.add("greenplum");
 		
 		options.addOption(
 				OptionBuilder
