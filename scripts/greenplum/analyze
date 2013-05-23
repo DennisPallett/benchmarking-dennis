@@ -1,4 +1,5 @@
 #!/bin/bash
+
 USER=`whoami`
 
 if [ "$USER" != "gpadmin" ]; then
@@ -6,4 +7,6 @@ if [ "$USER" != "gpadmin" ]; then
         exit 1
 fi
 
-psql -d exploitatie -f schema.sql
+echo "Running ANALYZE... this may take a while!"
+time psql -d exploitatie -c "ANALYZE;"
+echo "ANALYZE Finished!"
