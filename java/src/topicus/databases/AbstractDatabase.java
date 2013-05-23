@@ -10,6 +10,7 @@ import java.util.Observable;
 import topicus.ConsoleScript;
 import topicus.benchmarking.BenchmarksScript;
 import topicus.benchmarking.AbstractBenchmarkRunner;
+import topicus.loadtenant.LoadTenantScript;
 
 public abstract class AbstractDatabase extends Observable {
 	protected String name;
@@ -44,6 +45,22 @@ public abstract class AbstractDatabase extends Observable {
 		}
 		
 		return conn;
+	}
+	
+	public void prepareLoadTenant (LoadTenantScript script) throws Exception {
+		// do something
+	}
+	
+	public void finishLoadTenant (LoadTenantScript script) throws Exception {
+		// do something
+	}
+	
+	public void prepareUnloadTenant () {
+		// do something
+	}
+	
+	public void finishUnloadTenant () {
+		// do something
 	}
 	
 	public void close () {

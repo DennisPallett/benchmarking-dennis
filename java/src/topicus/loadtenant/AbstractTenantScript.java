@@ -36,6 +36,14 @@ public abstract class AbstractTenantScript extends DatabaseScript {
 		tables.put("closure_organisatie", "closure_org_data.tbl");
 		tables.put("fact_exploitatie", "fe_data.tbl");
 	}
+	
+	public int getTenantId () {
+		return this.tenantId;
+	}
+	
+	public Connection getConnection () {
+		return this.conn;
+	}
 
 	protected void _deleteOldData(String tableName) throws SQLException {
 		this.printLine("Deleting old tenant data from `" + tableName + "`");

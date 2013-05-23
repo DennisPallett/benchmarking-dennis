@@ -56,6 +56,8 @@ public class LoadTenantScript extends AbstractTenantScript {
 		
 		this.printLine("Starting deployment of tenant data for tenant #" + this.tenantId);
 		
+		this.database.prepareLoadTenant(this);
+		
 		// loop through tables and deploy
 		for(Map.Entry<String, String> entry : this.tables.entrySet()) {
 			String tableName = entry.getKey();
@@ -63,6 +65,8 @@ public class LoadTenantScript extends AbstractTenantScript {
 			
 			this._deployData(fileName, tableName);
 		}		
+		
+		this.database.finishLoadTenant(this);
 		
 		this.printLine("Finished deployment of tenant data");		
 		

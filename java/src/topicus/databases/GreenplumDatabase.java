@@ -4,10 +4,13 @@ import java.io.IOException;
 import java.net.UnknownHostException;
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.SQLWarning;
 import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Properties;
@@ -15,6 +18,9 @@ import java.util.Random;
 
 import org.apache.commons.lang3.StringUtils;
 import org.postgresql.PGConnection;
+import org.postgresql.copy.CopyIn;
+import org.postgresql.copy.CopyManager;
+import org.postgresql.core.BaseConnection;
 import org.voltdb.client.Client;
 import org.voltdb.client.ClientConfig;
 import org.voltdb.client.ClientFactory;
@@ -25,6 +31,7 @@ import topicus.benchmarking.AbstractBenchmarkRunner;
 import topicus.benchmarking.BenchmarksScript;
 import topicus.benchmarking.JdbcBenchmarkRunner;
 import topicus.benchmarking.AbstractBenchmarkRunner.PrepareException;
+import topicus.loadtenant.LoadTenantScript;
 
 public class GreenplumDatabase extends AbstractDatabase {
 	
@@ -54,16 +61,58 @@ public class GreenplumDatabase extends AbstractDatabase {
 		return 1;
 	}
 	
+	public void prepareLoadTenant (LoadTenantScript script) throws SQLException {
+		script.printLine("Creating tenant partitions...");
+		
+		int tenantId = script.getTenantId();
+		Connection conn = script.getConnection();
+		Statement q = conn.createStatement();
+		for(int year=2008; year < 2028; year++) {
+			String partitionName = "tenant_" + tenantId + "_year_" + year;
+			String value = tenantId + "" + year;
+					
+			script.printLine("Removing old partition for " + year + " (if exists)");						
+			q.execute("ALTER TABLE fact_exploitatie DROP PARTITION IF EXISTS " + partitionName);
+			
+			script.printLine("Creating partition for " + year);
+			q.execute("ALTER TABLE fact_exploitatie ADD PARTITION " + partitionName + " VALUES ('" + value + "') WITH (appendonly=true, orientation=column)");			
+		}
+		
+		script.printLine("All partitions created!");
+	}
+	
 	public int[] deployData(Connection conn, String fileName, String tableName)
 			throws SQLException {
 		Statement q = conn.createStatement();
-		
+			
 		long start = System.currentTimeMillis();
-		int rows = q.executeUpdate("COPY " + tableName + " FROM'" + fileName + "' " +
+		q.executeUpdate("COPY " + tableName + " FROM '" + fileName + "' " +
 				"DELIMITER '#' NULL 'NULL'");
 		int runTime = (int) (System.currentTimeMillis() - start);
 		
-		return new int[]{runTime, rows};
+		// determine number of rows inserted
+		// unfortunately this is hard-coded
+		// because Greenplum does not return row count 
+		// Fortunately we know the row count for each table
+		// and a COPY either inserts ALL rows or completely fails
+		HashMap<String, Integer> rowCount = new HashMap<String, Integer>();
+		rowCount.put("month_names",  13);
+		rowCount.put("dim_tijdtabel", 36525);
+		rowCount.put("dim_administratie", 28);
+		rowCount.put("dim_grootboek", 22384);
+		rowCount.put("dim_kostenplaats", 22735);
+		rowCount.put("organisatie", 988);
+		rowCount.put("closure_organisatie", 3760);
+		rowCount.put("fact_exploitatie", 14961724);
+		
+		
+		if (rowCount.containsKey(tableName) == false) {
+			throw new SQLException("Unknown table `" + tableName + "`");
+		}
+		
+		int rows = rowCount.get(tableName);
+		
+		return new int[]{runTime, (int)rows};
 	}
 	
 	public void createTable(Connection conn, DbTable table) throws SQLException {
@@ -168,8 +217,8 @@ public class GreenplumDatabase extends AbstractDatabase {
 		}
 		
 		Properties props = new Properties();
-		props.setProperty("prepareThreshold", "0");
-		props.setProperty("protocolVersion",  "2");
+		//props.setProperty("prepareThreshold", "0");
+		//props.setProperty("protocolVersion",  "2");
 		
 		if (this.user.length() > 0) {
 			props.setProperty("user", this.user);
