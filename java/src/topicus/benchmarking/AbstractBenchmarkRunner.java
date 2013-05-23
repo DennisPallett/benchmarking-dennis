@@ -13,9 +13,12 @@ public abstract class AbstractBenchmarkRunner {
 	protected int nodes;
 	protected List<String[]> queryList;
 	
+	protected boolean isFailed = false;
+	
 	public abstract void prepareBenchmark () throws PrepareException;
 	public abstract void runIteration (int iteration);
 	public abstract void finishBenchmark ();
+	
 	
 	public void setQueryList(List<String[]> queryList) {
 		this.queryList = queryList;
@@ -35,6 +38,10 @@ public abstract class AbstractBenchmarkRunner {
 	
 	public void setDatabase(AbstractDatabase database) {
 		this.database = database;
+	}
+	
+	public void setIsFailed () {
+		this.isFailed = true;
 	}
 	
 	protected String _replaceOrgId(String query) {

@@ -93,6 +93,7 @@ public class BenchmarkUser extends Thread {
 				this.runBenchmarks();
 			} catch (InterruptedException e) {
 				this.isFailed = true;
+				this.runner.setIsFailed();
 				this.failException = e;
 				this.owner.printError("User #" + this.userId + " failed during benchmarking");
 			}
@@ -114,6 +115,8 @@ public class BenchmarkUser extends Thread {
 			this.owner.printLine("User #" + this.userId + " running iteration " + i);
 			this.runner.runIteration(i);
 			this.owner.printLine("User #" + this.userId + " finished iteration " + i);
+			
+			if (this.isFailed) break;
 		}
 	}	
 

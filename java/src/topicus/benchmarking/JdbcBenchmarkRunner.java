@@ -43,6 +43,8 @@ public class JdbcBenchmarkRunner extends AbstractBenchmarkRunner {
 		
 		int setNum = 1;
 		while(iter.hasNext()) {
+			if (this.isFailed) break;
+			
 			String[] queries = iter.next();
 			int[] times = {0,0,0,0};
 						
@@ -233,16 +235,16 @@ public class JdbcBenchmarkRunner extends AbstractBenchmarkRunner {
 				sleep = BenchmarksScript.QUERY_TIMEOUT / 2;
 			}
 			
-			while(true) {
-				try {
+			try {
+				while(true) {
 					// wait certain number before checking again
 					Thread.sleep(sleep);
 					
 					// check for timed-out queries
-					owner.checkTimeouts();		
-				} catch (InterruptedException e) {
-					// don't care!
+					owner.checkTimeouts();
 				}
+			} catch (InterruptedException e) {
+				// don't care!
 			}
 		}
 		
