@@ -23,6 +23,9 @@ apt-get install p7zip-full
 # install ant
 apt-get install ant -y
 
+# install XFS tools
+apt-get install xfsprogs -y
+
 # install SSH client and server
 apt-get install ssh -y
 
