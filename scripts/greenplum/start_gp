@@ -1,0 +1,38 @@
+#!/bin/bash
+
+echo "===== Greenplum Cluster Start-up Script ====="
+echo "This script is used to start up a Greenplum "
+echo "cluster with one or more nodes"
+echo ""
+
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+CONF_FILE="$SCRIPT_DIR/gpinitsystem_config"
+
+# verify current user is gpdamin
+USER=`whoami`
+if [ "$USER" != "gpadmin" ]; then
+        echo "ERROR: Database must be setup as user gpadmin"
+        exit 1
+fi
+
+NODES=$1
+
+if [ "$NODES" == "" ]; then
+    echo "ERROR: you must specify the number of nodes to use"
+    exit 1
+fi
+
+if [ $NODES -lt 1 ]; then
+    echo "ERROR: number of specified nodes must be at least 1"
+    exit 1
+fi
+
+echo "Info: using $NODES nodes"
+
+if [ $NODES -eq 1 ]; then
+    HOSTS_FILE="$SCRIPT_DIR/config/hostsfile_singlenode"
+else
+    HOSTS_FILE="$SCRIPT_DIR/config/hostsfile_$NODESnodes"
+fi
+
+gpinitsystem -c "$SCRIPT_DIR/config/gpinitsystem_config" -h "$HOSTS_FILE"
