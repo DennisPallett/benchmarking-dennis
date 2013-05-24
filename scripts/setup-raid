@@ -47,8 +47,11 @@ mkdir -p /mnt && mount -t ext4 -o noatime /dev/md0 /mnt
 cd /mnt
 
 perl -ne 'print if $_ !~ /mnt/' /etc/fstab > /etc/fstab.2
-echo '#/dev/md0  /mnt  ext4    defaults 0 0' >> /etc/fstab.2
+echo '/dev/md0  /mnt  ext4    defaults 0 0' >> /etc/fstab.2
 mv /etc/fstab.2 /etc/fstab
+
+# remove --name from conf which screws auto-mounting after reboot
+sed -i "s/--name=NAS:0 / /g" "/etc/mdadm.conf"
 
 mkdir /mnt/results
 mkdir /mnt/tenant-data
