@@ -32,7 +32,7 @@ echo "Info: using $NODES nodes"
 if [ $NODES -eq 1 ]; then
     HOSTS_FILE="$SCRIPT_DIR/config/hostsfile_singlenode"
 else
-    HOSTS_FILE="$SCRIPT_DIR/config/hostsfile_$NODESnodes"
+    HOSTS_FILE="$SCRIPT_DIR/config/hostsfile_${NODES}nodes"
 fi
 
 gpinitsystem -c "$SCRIPT_DIR/config/gpinitsystem_config" -h "$HOSTS_FILE"
