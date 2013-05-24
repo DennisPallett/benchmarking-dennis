@@ -1,0 +1,61 @@
+#!/bin/bash
+
+echo "===== Greenplum Enable Remote Access Script ====="
+echo "This script is used to enable remote access to the Greenplum database"
+echo ""
+
+# verify current user is gpdamin
+USER=`whoami`
+if [ "$USER" != "gpadmin" ]; then
+        echo "ERROR: Must be run as user gpadmin"
+        exit 1
+fi
+
+# Prints a description, runs command(s) and prints a confirmation
+# Note it cannot actually handle failures. Consider that a TODO =)
+COLS=80 # The built-in variable $COLUMNS does not work, so just use width 80
+run() {
+    echo -ne "$2"
+    eval $1
+    let "space = $COLS - ${#2}"
+    printf "%${space}s\n" "[ OK ]"
+}
+
+
+edit_postgres () {
+    sed -i "s/#listen_addresses/listen_addresses/g" "$MASTER_DATA_DIRECTORY/postgresql.conf"
+}
+
+add_private_ips () {
+    add_ip "10.0.0.0/8"
+}
+
+add_remote_ip () {
+    REMOTE_IP=`last -i1 "ubuntu" | awk '{print $3;exit}'`
+
+    if [ "$REMOTE_IP" != "" ]; then
+        add_ip "$REMOTE_IP/16"
+    fi
+}
+
+restart_gp () {
+    gpstop -r -M "fast"
+}
+
+add_ip () {
+    CIDR=$1
+    FILE="$MASTER_DATA_DIRECTORY/pg_hba.conf"
+
+    if grep -q "#added $CIDR" "$FILE"
+    then
+		echo -n ""
+    else
+        echo "#added $CIDR" >> "$FILE"
+        echo "host	all	gpadmin	$CIDR	trust" >> "$FILE"
+    fi
+}
+
+run edit_postgres	'Modifying postgres.conf to listen on *'
+run add_private_ips	'Enabling access for 10.0.0.0/8 private network'
+run add_remote_ip	'Enable access for remote user IP'
+run restart_gp		'Restarting Greenplum Database'
