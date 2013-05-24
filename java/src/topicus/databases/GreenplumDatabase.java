@@ -54,11 +54,18 @@ public class GreenplumDatabase extends AbstractDatabase {
 	}
 	
 	public AbstractBenchmarkRunner createBenchmarkRunner () {
-		return new JdbcBenchmarkRunner();
+		return new BenchmarkRunner();
 	}
 			
 	public int getNodeCount(Connection conn) throws SQLException {	
-		return 1;
+		Statement q = conn.createStatement();
+		
+		ResultSet results = q.executeQuery("SELECT COUNT(DISTINCT(hostname)) AS node_count FROM gp_segment_configuration");
+		
+		results.next();
+		
+		int nodeCount = Integer.parseInt(results.getString("node_count"));
+		return nodeCount;
 	}
 	
 	public void prepareLoadTenant (LoadTenantScript script) throws SQLException {
@@ -229,6 +236,25 @@ public class GreenplumDatabase extends AbstractDatabase {
 		Connection conn = DriverManager.getConnection(url, props);
 		
 		return conn;
+	}
+	
+	public class BenchmarkRunner extends JdbcBenchmarkRunner {
+		protected  void setupConnections () throws SQLException {
+			this.owner.printLine("Setting up connections for user #" + this.userId);
+			
+			// setup NR_OF_QUERIES connections (1 for each query)
+			for(int i=0; i < NR_OF_QUERIES; i++) {
+				// always node1 
+				int node = 1;
+				
+				this.owner.printLine("Setting up connection #" + (i+1) + " to node" + node + " for user #" + this.userId);
+				
+				this.conns[i] = database.setupConnection("node" + node);
+							
+				this.owner.printLine("Connection #" + (i+1) + " setup for user #" + this.userId);
+			}
+		}
+		
 	}
 	
 }
