@@ -29,6 +29,23 @@ if [ $DEVICES_COUNT -lt 2 ]; then
 	exit 1;
 fi
 
+# determine specified filesystem type
+if [ $1 == "xfs" ]; then
+	FS_TYPE="xfs"
+elif [ $1 == "" -o $1 == "ext4" ]; then
+	FS_TYPE="ext4"
+else
+	echo "ERROR: invalid filesystem type specified: $1"
+	exit 1
+fi
+
+# determine mount options
+if [ $2 == ""]; then
+	MOUNT_OPTIONS="noatime"
+else
+	MOUNT_OPTIONS="$2"
+fi
+
 echo "Unmounting /mnt"
 umount /mnt
 echo "Unmounted"
@@ -42,12 +59,12 @@ echo "DEVICE $DEVICES" > /etc/mdadm.conf
 mdadm --detail --scan >> /etc/mdadm.conf
 
 blockdev --setra 2048 /dev/md0
-mkfs.ext4 /dev/md0
-mkdir -p /mnt && mount -t ext4 -o noatime /dev/md0 /mnt
+mkfs -t "$FS_TYPE" /dev/md0
+mkdir -p /mnt && mount -t "$FS_TYPE" -o "$MOUNT_OPTIONS" /dev/md0 /mnt
 cd /mnt
 
 perl -ne 'print if $_ !~ /mnt/' /etc/fstab > /etc/fstab.2
-echo '/dev/md0  /mnt  ext4    defaults 0 0' >> /etc/fstab.2
+echo '/dev/md0  /mnt  $FS_TYPE    $MOUNT_OPTIONS 0 0' >> /etc/fstab.2
 mv /etc/fstab.2 /etc/fstab
 
 # remove --name from conf which screws auto-mounting after reboot
