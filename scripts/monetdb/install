@@ -1,0 +1,33 @@
+#!/bin/bash
+
+echo "===== MonetDB Install Script ====="
+echo "This script is used to install MonetDB on a node"
+echo ""
+
+# The script needs admin rights
+if [ `/usr/bin/id -u` -ne 0 ]; then
+    echo "ERROR: Run as sudo / root"
+    exit 1
+fi
+
+echo "Setting up APT-GET source..."
+FILE="/etc/apt/sources.list.d/monetdb.list"
+echo "deb http://dev.monetdb.org/downloads/deb/ quantal monetdb" >> "$FILE"
+echo "deb-src http://dev.monetdb.org/downloads/deb/ quantal monetdb" >> "$FILE"
+echo "Done"
+
+echo "Adding MonetDB GPG key..."
+wget --output-document=- http://dev.monetdb.org/downloads/MonetDB-GPG-KEY | apt-key add -
+echo "Done"
+
+echo "Updating APT-GET..."
+apt-get update
+echo "Done"
+
+echo "Installing MonetDB server and client..."
+apt-get install monetdb5-sql monetdb-client
+echo "Done"
+
+echo ""
+
+echo "All finished!"
