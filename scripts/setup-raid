@@ -72,6 +72,9 @@ $HOSTNAME=`hostname`
 sed -i "s/--name=NAS:0 / /g" "/etc/mdadm.conf"
 sed -i "s/name=$HOSTNAME:0 / /g" "/etc/mdadm.conf"
 
+# update initramfs so it contains mdadm.conf settings during boot
+update-initramfs -u
+
 mkdir /mnt/results
 mkdir /mnt/tenant-data
 
