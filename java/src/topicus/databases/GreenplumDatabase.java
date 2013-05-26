@@ -71,12 +71,23 @@ public class GreenplumDatabase extends AbstractDatabase {
 	public void prepareLoadTenant (LoadTenantScript script) throws SQLException {
 		script.printLine("Creating tenant partitions...");
 		
-		int tenantId = script.getTenantId();
-		Connection conn = script.getConnection();
+		Connection conn = script.getConnection();	
 		Statement q = conn.createStatement();
+		int tenantId = script.getTenantId();
+		
+		String partitionName = "tenant_" + tenantId;
+		String value = String.valueOf(tenantId);
+		
+		script.printLine("Removing old partition for dim_grootboek");
+		q.execute("ALTER TABLE dim_grootboek DROP PARTITION IF EXISTS " + partitionName);
+		
+		script.printLine("Creating partition for dim_grootboek");
+		q.execute("ALTER TABLE dim_grootboek ADD PARTITION " + partitionName + " VALUES ('" + value + "')");
+		
+		script.printLine("Creating fact partitions");
 		for(int year=2008; year < 2028; year++) {
-			String partitionName = "tenant_" + tenantId + "_year_" + year;
-			String value = tenantId + "" + year;
+			partitionName = "tenant_" + tenantId + "_year_" + year;
+			value = tenantId + "" + year;
 					
 			script.printLine("Removing old partition for " + year + " (if exists)");						
 			q.execute("ALTER TABLE fact_exploitatie DROP PARTITION IF EXISTS " + partitionName);

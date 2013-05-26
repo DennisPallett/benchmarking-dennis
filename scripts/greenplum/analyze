@@ -7,6 +7,8 @@ if [ "$USER" != "gpadmin" ]; then
         exit 1
 fi
 
+START=`date +"%T"`
+echo "Started at $START"
 echo "Running ANALYZE... this may take a while!"
 time psql -d exploitatie -c "ANALYZE;"
 echo "ANALYZE Finished!"

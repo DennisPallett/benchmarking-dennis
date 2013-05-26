@@ -13,7 +13,7 @@ CREATE TABLE dim_administratie (
 
 DROP TABLE IF EXISTS dim_grootboek CASCADE;
 CREATE TABLE dim_grootboek (
-	grootboek_key integer primary key not null, 
+	grootboek_key integer not null, 
 	gb_tenant integer not null, 
 	gb_naam character varying(120) not null, 
 	gb_rekeningnr integer not null, 
@@ -30,7 +30,13 @@ CREATE TABLE dim_grootboek (
 	gb_source_modified timestamp without time zone, 
 	gb_source_id integer, 
 	gb_source_adminnr character varying(20) not null
+)
+PARTITION BY LIST (gb_tenant)
+(
+ PARTITION dummy VALUES ('0')
 );
+
+CREATE UNIQUE INDEX gb_idx ON dim_grootboek (grootboek_key);
 
 DROP TABLE IF EXISTS dim_kostenplaats CASCADE;
 CREATE TABLE dim_kostenplaats (
