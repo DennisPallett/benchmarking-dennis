@@ -127,27 +127,6 @@ create_dirs () {
 	chown -R gpadmin:gpadmin /mnt/data
 }
 
-fix_libs () {
-	cd "/usr/local/greenplum-db"
-
-	# libraries shipped with Greenplum SNE
-	gplibs="$(find -maxdepth 1 -type f | cut -f 2 -d /)"
-
-	# libraries with same abi installed via dpkg
-	deblibs="$(dpkg -S $gplibs 2> /dev/null | cut -f 2  -d ' ')"
-
-	# we remove the greenplum one to avoid "no version information available" errors
-	for lib in $deblibs; do
-	  ver=$(basename $lib)
-	  rm -fv $ver
-	  while [ $ver = ${ver#.so} ]&&[ $ver != ${ver%.so*} ]; do
-	      ver=${ver%.*}
-	      rm -fv $ver
-	  done
-	done
-}
-
-
 run fake_redhat		'Faking RedHat release'
 run setup_libnuma	'Installing libnuma library'
 run enable_pam_limits	'Enabling PAM limits to /etc/pam.d/su'
@@ -155,7 +134,6 @@ run set_kernel_settings	'Setting kernel settings'
 run set_security_limits	'Setting security limits'
 run create_account	'Creating gpadmin account'
 run create_dirs		'Creating data directories'
-run fix_libs		'Fixing libraries'
 
 echo ""
 echo "All finished!"
