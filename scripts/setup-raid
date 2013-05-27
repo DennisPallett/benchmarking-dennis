@@ -40,7 +40,7 @@ else
 fi
 
 # determine mount options
-if [ $2 == ""]; then
+if [ $2 == "" ]; then
 	MOUNT_OPTIONS="noatime"
 else
 	MOUNT_OPTIONS="$2"
