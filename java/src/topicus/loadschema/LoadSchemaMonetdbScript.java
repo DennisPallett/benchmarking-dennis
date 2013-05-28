@@ -10,6 +10,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.commons.cli.CommandLine;
@@ -21,37 +22,58 @@ import topicus.DatabaseScript;
 import topicus.ExitCodes;
 import topicus.benchmarking.BenchmarksScript.MissingResultsFileException;
 import topicus.databases.AbstractDatabase;
+import topicus.databases.MonetdbDatabase;
 import topicus.databases.DbColumn;
 import topicus.databases.DbTable;
+import topicus.databases.MonetdbDatabase.MonetdbInstance;
 import topicus.loadtenant.LoadTenantScript.AlreadyDeployedException;
 
-public class LoadSchemaScript extends DatabaseScript {
+public class LoadSchemaMonetdbScript extends LoadSchemaScript {
 	protected String baseDirectory = "";	
 	
 	protected Connection conn;
 
-	public LoadSchemaScript(String type, AbstractDatabase database) {
+	protected MonetdbDatabase database = null;
+	
+	public LoadSchemaMonetdbScript(String type, MonetdbDatabase database) {
 		super(type, database);
+		this.database = database;
 	}
 	
 	public void run () throws Exception {	
-		printLine("Started-up schema loading tool");	
+		printLine("Started-up schema loading tool for MonetDB");	
 		
 		this.setupLogging(cliArgs.getOptionValue("log-file"));
 		
 		printLine("Type set to: " + this.type);
 		
-		this.printLine("Setting up connection");
+		this.printLine("Setting up master connection");
 		this.conn = this._setupConnection();
 		this.printLine("Connection setup");
 		
-		this._setOptions();
+		ArrayList<MonetdbInstance> instanceList = database.getInstanceList(conn);
 		
-		this._checkIfDeployed();
-			
+		if (instanceList.size() == 0) {
+			throw new Exception("No instances to deploy schema to!");
+		}
+					
 		this.printLine("Starting deployment of schema");
 		
-		this._deploySchema();
+		for(MonetdbInstance instance : instanceList) {
+			String hostName = instance.getHost();
+			int port = instance.getPort();
+			String instanceName = "#" + instance.getId() + " (" + hostName + ":" + port + ")";
+			
+			printLine("Setting up connection to instance " + instanceName);
+			Connection instanceConn = instance.setupConnection();
+			
+			this._deploySchema(instanceConn, instance);	
+			
+			printLine("Deployed schema on instance " + instanceName);
+			
+			printLine("Closing connection");
+			instanceConn.close();
+		}
 		
 		this.printLine("Finished deployment");		
 		
@@ -59,20 +81,22 @@ public class LoadSchemaScript extends DatabaseScript {
 		this.printLine("Stopping");
 	}
 	
-	protected void _deploySchema() throws SQLException {
+	protected void _deploySchema(Connection conn, AbstractDatabase database) throws SQLException {
 		ArrayList<DbTable> tables = DbSchema.AllTables();
 		
 		for(DbTable table : tables) {
-			this._deployTable(table);
+			if (table.getName().equals("fact_exploitatie") == false) {
+				this._deployTable(conn, database, table);
+			}
 		}
 	}
 	
-	protected void _deployTable(DbTable table) throws SQLException {
+	protected void _deployTable(Connection conn, AbstractDatabase database, DbTable table) throws SQLException {
 		this.printLine("Deploying `" + table.getName() + "`");
 		
 		database.dropTable(conn, table);
 		
-		this.database.createTable(this.conn, table);		
+		this.database.createTable(conn, table);		
 		this.printLine("Table deployed");	
 	}
 	

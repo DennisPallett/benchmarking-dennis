@@ -17,6 +17,7 @@ public abstract class AbstractDatabase extends Observable {
 	protected String user;
 	protected String password;
 	protected int port;
+	protected String host;
 	
 
 	public abstract String getJdbcDriverName ();
@@ -83,6 +84,10 @@ public abstract class AbstractDatabase extends Observable {
 		return this.name;
 	}
 	
+	public void setName (String name) {
+		this.name = name;
+	}
+	
 	public String getUser () {
 		return this.user;
 	}
@@ -93,6 +98,18 @@ public abstract class AbstractDatabase extends Observable {
 	
 	public int getPort () {
 		return this.port;
+	}
+	
+	public void setPort(int port) {
+		this.port = port;
+	}
+	
+	public void setHost(String host) {
+		this.host = host;
+	}
+	
+	public String getHost () {
+		return this.host;
 	}
 	
 	public void printLine (String msg) {

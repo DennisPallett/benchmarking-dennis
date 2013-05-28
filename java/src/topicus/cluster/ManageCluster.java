@@ -545,7 +545,7 @@ public class ManageCluster {
 		}
 		
 		// add instance storage 1
-		if (instanceType.equals("m1.medium") || instanceType.equals("m1.large") || instanceType.equals("m1.xlarge")) {
+		if (instanceType.equals("m1.medium") || instanceType.equals("m1.large") || instanceType.equals("m1.xlarge") || instanceType.equals("cc2.8xlarge")) {
 			BlockDeviceMapping block = new BlockDeviceMapping();
 			block.setDeviceName("/dev/sdb");
 			block.setVirtualName("ephemeral0");
@@ -554,7 +554,7 @@ public class ManageCluster {
 		}
 		
 		// add instance storage 2
-		if (instanceType.equals("m1.large") || instanceType.equals("m1.xlarge")) {
+		if (instanceType.equals("m1.large") || instanceType.equals("m1.xlarge") || instanceType.equals("cc2.8xlarge")) {
 			BlockDeviceMapping block = new BlockDeviceMapping();
 			block.setDeviceName("/dev/sdc");
 			block.setVirtualName("ephemeral1");
@@ -563,7 +563,7 @@ public class ManageCluster {
 		}
 		
 		// add instance storage 3 and 4
-		if (instanceType.equals("m1.xlarge")) {
+		if (instanceType.equals("m1.xlarge") || instanceType.equals("cc2.8xlarge")) {
 			BlockDeviceMapping block1 = new BlockDeviceMapping();
 			block1.setDeviceName("/dev/sdd");
 			block1.setVirtualName("ephemeral2");

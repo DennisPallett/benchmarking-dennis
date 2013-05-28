@@ -88,7 +88,7 @@ public abstract class ConsoleScript {
 		
 		input = input.toLowerCase();
 		
-		return (input.charAt(0) == 'y');
+		return (input.length() > 0 && input.charAt(0) == 'y');
 	}
 	
 	public void printLine (String msg, boolean newLine, boolean isError) {

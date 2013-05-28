@@ -25,7 +25,7 @@ apt-get update
 echo "Done"
 
 echo "Installing MonetDB server and client..."
-apt-get install monetdb5-sql monetdb-client
+apt-get install monetdb5-sql monetdb-client -y
 echo "Done"
 
 echo ""

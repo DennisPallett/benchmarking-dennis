@@ -64,8 +64,11 @@ public class LoadBaseDataScript extends DatabaseScript {
 		this.printLine("Stopping");
 	}
 	
-	
 	protected void _loadBaseData () throws SQLException {
+		this._loadBaseData(this.database, this.conn);
+	}
+	
+	protected void _loadBaseData (AbstractDatabase database, Connection conn) throws SQLException {
 		printLine("Loading base data");
 		
 		this.printLine("Loading month names...");

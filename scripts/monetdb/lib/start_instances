@@ -1,0 +1,100 @@
+#!/bin/bash
+
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+# The script needs admin rights
+if [ `/usr/bin/id -u` -ne 0 ]; then
+    echo "ERROR: Run as sudo / root"
+    exit 1
+fi
+
+MASTER_HOST=$1
+MASTER_PORT=$2
+MASTER_DB="master"
+NUMBER_OF_INSTANCES=$3
+INSTANCE_DIR="$4"
+INSTANCE_PORT=$5
+INSTANCE_DB="$6"
+
+if [ "$MASTER_HOST" == "" ]; then
+    echo "ERROR: must specify host of master database as 1st argument!"
+    exit 1
+fi
+
+if [ "$MASTER_PORT" == "" ]; then
+    echo "ERROR: must specify port of master database as 2nd argument!"
+    exit 1
+fi
+
+if [ "$INSTANCE_DIR" == "" ]; then
+    echo "ERROR: must specify base directory for instances as 4th argument!"
+    exit 1
+fi
+
+if [ "$INSTANCE_PORT" == "" ]; then
+    echo "ERROR: must specify starting port for instances as 5th argument!"
+    exit 1
+fi
+
+if [ "$INSTANCE_DB" == "" ]; then
+    echo "ERROR: must specifiy the instance database as 6th argument!"
+    exit 1
+fi
+
+echo "user=monetdb" >> ".monetdb"
+echo "password=monetdb" >> ".monetdb"
+
+# start each instance
+HOSTNAME=`hostname`
+for ((i=1; i <= $NUMBER_OF_INSTANCES; i++ ))
+do
+    echo "Setting up instance #$i"
+
+    # create directory
+    echo "  Creating instance directory..."
+    mkdir -p "$INSTANCE_DIR/instance-$i"
+    echo "  Done"
+
+    # create DBfarm
+    echo "  Creating DB farm..."
+    monetdbd create "$INSTANCE_DIR/instance-$i"
+    echo "  Done"
+
+    # determine port of instance
+    PORT=$(($INSTANCE_PORT + $i))
+
+    # set port of instance
+    echo "  Setting port to $PORT..."
+    monetdbd set port="$PORT" "$INSTANCE_DIR/instance-$i"
+    echo "  Done"
+
+    # start instance
+    echo "  Starting instance..."
+    monetdbd start "$INSTANCE_DIR/instance-$i"
+    echo "  Done"   
+
+    # create master database
+    echo "  Creating instance database 'INSTANCE_DB'..."
+    monetdb -p "$PORT" create "$INSTANCE_DB" 
+    echo "  Done"
+
+    # start master database
+    echo "  Starting instance database..."
+    monetdb -p "$PORT" start "$INSTANCE_DB" 
+    monetdb -p "$PORT" release "$INSTANCE_DB"
+    echo "  Done"
+   
+    # notify master about this instance
+    echo "  Adding instance #${i} to master..."
+    echo "DELETE FROM instance WHERE instance_host = '$HOSTNAME' AND instance_port = '$PORT';" >> ".queries"
+    echo "INSERT INTO instance (instance_host, instance_port) VALUES ('$HOSTNAME', '$PORT');" >> ".queries"
+    mclient -h "$MASTER_HOST" -p "$MASTER_PORT" -d "$MASTER_DB" ".queries"
+    rm ".queries"
+    echo "  Done"
+
+    echo "  Instance $i out of $NUMBER_OF_INSTANCES running!"
+done
+
+rm ".monetdb"
+
+echo "All instances running!"

@@ -1,0 +1,62 @@
+#!/bin/bash
+
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+# The script needs admin rights
+if [ `/usr/bin/id -u` -ne 0 ]; then
+    echo "ERROR: Run as sudo / root"
+    exit 1
+fi
+
+# read config file
+source "$SCRIPT_DIR/../setup.cfg"
+
+MASTER_DB="master"
+
+if [ -d "$MASTER_DIR" ]; then
+    echo "ERROR: master directory already exists and possibly already initialized!"
+    exit 1
+fi
+
+# create master directory
+echo "Creating master directory..."
+mkdir -p "$MASTER_DIR"
+echo "Done"
+
+# create DBfarm
+echo "Creating DB farm..."
+monetdbd create "$MASTER_DIR"
+echo "Done"
+
+# set port of master
+echo "Setting port of master to $MASTER_PORT..."
+monetdbd set port="$MASTER_PORT" "$MASTER_DIR"
+echo "Done"
+
+# start master
+echo "Starting master instance..."
+monetdbd start "$MASTER_DIR"
+echo "Done"
+
+# create master database
+echo "Creating master database..."
+monetdb -p "$MASTER_PORT" create "$MASTER_DB" 
+echo "Done"
+
+# start master database
+echo "Starting master database..."
+monetdb -p "$MASTER_PORT" start "$MASTER_DB" 
+monetdb -p "$MASTER_PORT" release "$MASTER_DB"
+echo "Done"
+
+echo "user=monetdb" >> ".monetdb"
+echo "password=monetdb" >> ".monetdb"
+
+# creating master schema
+echo "Creating master schema..."
+mclient -d "$MASTER_DB" -p "$MASTER_PORT" "$SCRIPT_DIR/master-schema.sql"
+echo "Done"
+
+rm ".monetdb"
+
+echo "Master is setup and running!"

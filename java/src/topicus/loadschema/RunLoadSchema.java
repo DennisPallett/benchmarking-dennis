@@ -3,6 +3,7 @@ package topicus.loadschema;
 import org.apache.commons.cli.OptionBuilder;
 
 import topicus.RunDatabaseScript;
+import topicus.databases.MonetdbDatabase;
 
 public class RunLoadSchema extends RunDatabaseScript {
 	
@@ -11,6 +12,7 @@ public class RunLoadSchema extends RunDatabaseScript {
 		validTypes.add("vertica");
 		validTypes.add("citusdb");
 		validTypes.add("greenplum");
+		validTypes.add("monetdb");
 			
 		options.addOption(
 				OptionBuilder
@@ -36,6 +38,8 @@ public class RunLoadSchema extends RunDatabaseScript {
 		
 		if (this.type.equals("vertica") || this.type.equals("citusdb") || this.type.equals("greenplum")) {
 			loader = new LoadSchemaScript(this.type, this.database);
+		} else if (this.type.equals("monetdb")) {
+			loader = new LoadSchemaMonetdbScript(this.type, (MonetdbDatabase)this.database);
 		} else if(this.type.equals("voltdb")) {
 			loader = new LoadSchemaVoltdbScript(this.type, this.database);
 		} else {
