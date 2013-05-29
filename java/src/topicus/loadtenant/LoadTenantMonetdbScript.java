@@ -73,6 +73,13 @@ public class LoadTenantMonetdbScript extends LoadTenantScript {
 			}
 		}		
 		
+		// notify master about new tenant
+		printLine("Adding tenant to master...");
+		PreparedStatement q = conn.prepareStatement("INSERT INTO tenant (tenant_id) VALUES (?)");
+		q.setInt(1,  this.tenantId);		
+		q.executeUpdate();
+		printLine("Done!");
+		
 		this.printLine("Finished deployment of tenant data");		
 		
 		instanceConn.close();

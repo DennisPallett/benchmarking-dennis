@@ -28,14 +28,13 @@ import org.voltdb.client.ClientResponse;
 import org.voltdb.client.ProcCallException;
 
 import topicus.benchmarking.AbstractBenchmarkRunner;
+import topicus.benchmarking.BenchmarksMonetdbScript;
 import topicus.benchmarking.BenchmarksScript;
 import topicus.benchmarking.JdbcBenchmarkRunner;
 import topicus.benchmarking.AbstractBenchmarkRunner.PrepareException;
 import topicus.loadtenant.LoadTenantScript;
 
 public class MonetdbDatabase extends AbstractDatabase {
-	
-	
 	public MonetdbDatabase () {
 		super();
 		
@@ -57,6 +56,16 @@ public class MonetdbDatabase extends AbstractDatabase {
 	public AbstractBenchmarkRunner createBenchmarkRunner () {
 		return new BenchmarkRunner();
 	}
+	
+	public int getTenantCount (Connection conn) throws SQLException {
+		PreparedStatement q = conn.prepareStatement("SELECT COUNT(*) AS tenant_count FROM tenant");
+		q.execute();
+		
+		ResultSet results = q.executeQuery();
+		results.next();
+		
+		return results.getInt("tenant_count");		
+	}
 			
 	public int getNodeCount(Connection conn) throws SQLException {	
 		Statement q = conn.createStatement();
@@ -69,11 +78,7 @@ public class MonetdbDatabase extends AbstractDatabase {
 		return nodeCount;
 	}
 	
-	public MonetdbInstance getInstanceForTenant (Connection masterConn, int tenantId) {
-		MonetdbInstance instance = null;
-		
-		// get all instances
-		ArrayList<MonetdbInstance> instanceList = this.getInstanceList(masterConn);
+	public MonetdbInstance getInstanceForTenant (ArrayList<MonetdbInstance> instanceList, int tenantId) {
 		int instanceCount = instanceList.size();
 		
 		// calculate which instance to use
@@ -81,6 +86,13 @@ public class MonetdbDatabase extends AbstractDatabase {
 		
 		// return instance (index = instanceId-1)
 		return instanceList.get(instanceId-1);
+	}
+	
+	public MonetdbInstance getInstanceForTenant (Connection masterConn, int tenantId) {	
+		// get all instances
+		ArrayList<MonetdbInstance> instanceList = this.getInstanceList(masterConn);
+		
+		return this.getInstanceForTenant(instanceList, tenantId);		
 	}
 	
 	public ArrayList<MonetdbInstance> getInstanceList (Connection conn) {
@@ -291,17 +303,30 @@ public class MonetdbDatabase extends AbstractDatabase {
 	}
 		
 	public class BenchmarkRunner extends JdbcBenchmarkRunner {
+		protected BenchmarksMonetdbScript owner;
+		protected MonetdbDatabase database;
+		
+		public void setOwner(BenchmarksScript owner) {
+			super.setOwner(owner);
+			this.owner = (BenchmarksMonetdbScript) owner;
+		}
+		
+		public void setDatabase(AbstractDatabase database) {
+			super.setDatabase(database);
+			this.database = (MonetdbDatabase) database;
+		}
+		
 		protected  void setupConnections () throws SQLException {
 			this.owner.printLine("Setting up connections for user #" + this.userId);
 			
-			// setup NR_OF_QUERIES connections (1 for each query)
-			for(int i=0; i < NR_OF_QUERIES; i++) {
-				// always node1 
-				int node = 1;
+			// get instance for this tenant (=userId)
+			MonetdbInstance instance = database.getInstanceForTenant(owner.getInstanceList(), this.userId);
+						
+			// setup NR_OF_QUERIES connections (1 for each query) to instance
+			for(int i=0; i < NR_OF_QUERIES; i++) {			
+				this.owner.printLine("Setting up connection #" + (i+1) + " to " + instance.getDisplayName() + " for user #" + this.userId);
 				
-				this.owner.printLine("Setting up connection #" + (i+1) + " to node" + node + " for user #" + this.userId);
-				
-				this.conns[i] = database.setupConnection("node" + node);
+				this.conns[i] = instance.setupConnection();
 							
 				this.owner.printLine("Connection #" + (i+1) + " setup for user #" + this.userId);
 			}

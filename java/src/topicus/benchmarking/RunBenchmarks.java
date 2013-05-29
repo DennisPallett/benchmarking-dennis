@@ -2,6 +2,7 @@ package topicus.benchmarking;
 
 import org.apache.commons.cli.OptionBuilder;
 import topicus.RunDatabaseScript;
+import topicus.databases.MonetdbDatabase;
 
 
 public class RunBenchmarks extends RunDatabaseScript {
@@ -13,6 +14,7 @@ public class RunBenchmarks extends RunDatabaseScript {
 		this.validTypes.add("vertica");
 		this.validTypes.add("voltdb");
 		this.validTypes.add("greenplum");
+		this.validTypes.add("monetdb");
 
 		options.addOption(
 				OptionBuilder
@@ -91,7 +93,12 @@ public class RunBenchmarks extends RunDatabaseScript {
 		super.run(args);
 		
 		BenchmarksScript benchmark = null;
-		benchmark = new BenchmarksScript(this.type, this.database);
+		
+		if (this.type.equals("monetdb")) {
+			benchmark = new BenchmarksMonetdbScript(this.type, (MonetdbDatabase) this.database);
+		} else {
+			benchmark = new BenchmarksScript(this.type, this.database);
+		}
 		
 		benchmark.setCliArgs(cliArgs);
 		benchmark.run();

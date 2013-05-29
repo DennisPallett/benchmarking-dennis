@@ -100,6 +100,7 @@ public class BenchmarkUser extends Thread {
 		} catch (Exception e) {
 			this.isFailed = true;
 			this.failException = e;
+			e.printStackTrace();
 			this.owner.printError("User #" + this.userId + " failed");
 		}		
 		

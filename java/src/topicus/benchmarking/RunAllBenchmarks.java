@@ -16,6 +16,7 @@ public class RunAllBenchmarks extends RunDatabaseScript {
 		this.validTypes.add("vertica");
 		this.validTypes.add("voltdb");
 		this.validTypes.add("greenplum");
+		this.validTypes.add("monetdb");
 		
 		options.addOption(
 				OptionBuilder

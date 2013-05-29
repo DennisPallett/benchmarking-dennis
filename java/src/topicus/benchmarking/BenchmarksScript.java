@@ -372,32 +372,13 @@ public class BenchmarksScript extends DatabaseScript {
 		// setup connection
 		Connection conn = this.database.setupConnection("node1");
 		
-		this.tenantCount = this.getTenantCount(conn);
+		this.tenantCount = this.database.getTenantCount(conn);
 		
 		this.printLine("Retrieving node count");
 		this.nodeCount = this.database.getNodeCount(conn);
 		this.printLine("Found " + this.nodeCount + " nodes for database");
 		
 		conn.close();
-	}
-	
-	protected int getTenantCount (Connection conn) throws SQLException {
-		this.printLine("Retrieving tenant count");
-
-		// execute COUNT query
-		Statement stmt = conn.createStatement();
-		ResultSet result = stmt.executeQuery("SELECT COUNT(DISTINCT a_tenant) AS tenant_count FROM dim_administratie WHERE a_tenant != 0;");
-		
-		// retrieve tenant count
-		result.next();
-		int tenantCount = result.getInt("tenant_count");
-		
-		// close everything
-		result.close();		
-		stmt.close();
-		
-		this.printLine("Found " + tenantCount + " tenants in database");		
-		return tenantCount;
 	}
 	
 	protected void _setupUsers () throws Exception {

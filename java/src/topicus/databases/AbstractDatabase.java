@@ -2,7 +2,9 @@ package topicus.databases;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Observable;
@@ -46,6 +48,22 @@ public abstract class AbstractDatabase extends Observable {
 		}
 		
 		return conn;
+	}
+	
+	public int getTenantCount (Connection conn) throws SQLException {
+		// execute COUNT query
+		Statement stmt = conn.createStatement();
+		ResultSet result = stmt.executeQuery("SELECT COUNT(DISTINCT a_tenant) AS tenant_count FROM dim_administratie WHERE a_tenant != 0;");
+		
+		// retrieve tenant count
+		result.next();
+		int tenantCount = result.getInt("tenant_count");
+		
+		// close everything
+		result.close();		
+		stmt.close();
+		
+		return tenantCount;
 	}
 	
 	public void prepareLoadTenant (LoadTenantScript script) throws Exception {
