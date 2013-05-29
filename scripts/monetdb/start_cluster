@@ -1,0 +1,81 @@
+#!/bin/bash
+
+echo "===== MonetDB Start Cluster Script ====="
+echo "This script is used to setup and start a MonetDB cluster"
+echo ""
+
+# The script needs admin rights
+if [ `/usr/bin/id -u` -ne 0 ]; then
+    echo "ERROR: Run as sudo / root"
+    exit 1
+fi
+
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+HOSTS_FILE=$1
+CONFIG_FILE=$2
+
+# validate hosts file
+if [ "$HOSTS_FILE" == "" -o ! -f "$HOSTS_FILE" ]; then
+    echo "ERROR: 1st argument must be a valid file containing the instance hosts!"
+    exit 1
+fi
+
+# check that hosts file has at least 1 hostname
+NUMBER_OF_HOSTS=`wc -l "$HOSTS_FILE" | awk '{print $1'}`
+if [ $NUMBER_OF_HOSTS -lt 1 ]; then
+    echo "ERROR: hosts file must contain at least 1 hostname!"
+    exit 1
+fi
+
+# validate config file
+if [ "$CONFIG_FILE" == "" -o ! -f "$CONFIG_FILE" ]; then
+    echo "ERROR: 2nd argument must be a valid config file!"
+    exit 1
+fi
+
+# read config file
+source "$CONFIG_FILE"
+
+# set master host
+# is always host of this script
+MASTER_HOST=`hostname`
+
+# confirm setup cluster
+read -p "Are you sure you want to setup MonetDB cluster (y/n)? " -n 1 -r
+echo ""
+if [[ $REPLY =~ ^[Yy]$ ]]; then
+    echo "Setting up master..."
+    
+    "$SCRIPT_DIR/lib/start_master" "$CONFIG_FILE"
+
+    echo "Master setup and running!"
+    echo "Setting up instances..."
+    
+    # loop through hosts file
+    while read INSTANCE_HOST; do
+        echo "Setting up instances on $INSTANCE_HOST..."
+
+        # verify ssh connectivity
+        echo "Verifying SSH connectivty with host $INSTANCE_HOST..."
+        SSH_OUTPUT=`ssh "$INSTANCE_HOST" echo "$INSTANCE_HOST"`
+        if [ "$SSH_OUTPUT" != "$INSTANCE_HOST" ]; then
+            echo "ERROR: no SSH connectivity with host $INSTANCE_HOST"
+            exit 1
+        else
+            echo "SSH connectivity verified and working!"
+        fi
+
+        # setup instances on host
+        ssh "$INSTANCE_HOST" "$SCRIPT_DIR/lib/start_instances \"$MASTER_HOST\" $MASTER_PORT $NUMBER_OF_INSTANCES \"$INSTANCE_DIR\" $INSTANCE_PORT \"$INSTANCE_DB\""
+
+        echo "Instances on host $INSTANCE_HOST up and running!"
+    done < "$HOSTS_FILE"
+
+    echo "Instances up and running!"
+    echo "All finished, MonetDB cluster is setup!"
+else
+    echo "Exiting!"
+fi
+
+

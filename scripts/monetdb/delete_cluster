@@ -1,0 +1,29 @@
+#!/bin/bash
+
+echo "===== MonetDB Delete Cluster Script ====="
+echo "This script is used to stop and delete a MonetDB cluster"
+echo ""
+
+# The script needs admin rights
+if [ `/usr/bin/id -u` -ne 0 ]; then
+    echo "ERROR: Run as sudo / root"
+    exit 1
+fi
+
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+
+# set master host
+# is always host of this script
+MASTER_HOST=`hostname`
+
+# confirm setup cluster
+read -p "Are you sure you want to delete MonetDB cluster (y/n)? This CANNOT be undone! " -n 1 -r
+echo ""
+if [[ $REPLY =~ ^[Yy]$ ]]; then
+    echo "Deleting MonetDB cluster..."
+
+else
+    echo "Exiting!"
+fi
+

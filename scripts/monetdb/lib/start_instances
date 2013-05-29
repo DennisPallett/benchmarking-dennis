@@ -48,7 +48,7 @@ echo "password=monetdb" >> ".monetdb"
 HOSTNAME=`hostname`
 for ((i=1; i <= $NUMBER_OF_INSTANCES; i++ ))
 do
-    echo "Setting up instance #$i"
+    echo "Setting up instance #$i on '$HOSTNAME'"
 
     # create directory
     echo "  Creating instance directory..."

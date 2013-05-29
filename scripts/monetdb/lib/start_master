@@ -8,8 +8,16 @@ if [ `/usr/bin/id -u` -ne 0 ]; then
     exit 1
 fi
 
+# validate config file
+CONFIG_FILE=$1
+if [ "$CONFIG_FILE" == "" -o ! -f "$CONFIG_FILE" ]; then
+    echo "ERROR: 2nd argument must be a valid config file!"
+    exit 1
+fi
+
 # read config file
-source "$SCRIPT_DIR/../setup.cfg"
+source "$CONFIG_FILE"
+
 
 MASTER_DB="master"
 
