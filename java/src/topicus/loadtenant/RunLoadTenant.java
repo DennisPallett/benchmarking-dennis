@@ -3,6 +3,7 @@ package topicus.loadtenant;
 import org.apache.commons.cli.OptionBuilder;
 
 import topicus.RunDatabaseScript;
+import topicus.databases.MonetdbDatabase;
 
 public class RunLoadTenant extends RunDatabaseScript {
 	
@@ -12,6 +13,7 @@ public class RunLoadTenant extends RunDatabaseScript {
 		this.validTypes.add("voltdb");
 		this.validTypes.add("citusdb");
 		this.validTypes.add("greenplum");
+		this.validTypes.add("monetdb");
 		
 		options.addOption(
 				OptionBuilder
@@ -58,6 +60,15 @@ public class RunLoadTenant extends RunDatabaseScript {
 				.withLongOpt("results-file")
 				.create()
 		);
+		
+		options.addOption(
+				OptionBuilder
+				.hasArg(false)
+				.isRequired(false)
+				.withDescription("Automatically overwrite any existing files")
+				.withLongOpt("overwrite-existing")
+				.create()
+		);
 	}
 	
 	public void run (String[] args)  throws Exception {
@@ -67,6 +78,8 @@ public class RunLoadTenant extends RunDatabaseScript {
 		
 		if (this.type.equals("vertica")) {
 			loader = new LoadTenantScript(this.type, this.database, new VerticaManageTenant());
+		} else if (this.type.equals("monetdb")) {
+			loader = new LoadTenantMonetdbScript(this.type, (MonetdbDatabase)this.database, new ManageTenant());
 		} else {
 			loader = new LoadTenantScript(this.type, this.database, new ManageTenant());
 		}

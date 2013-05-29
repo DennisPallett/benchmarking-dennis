@@ -18,6 +18,11 @@ public class DbTable {
 		return this.name;
 	}
 	
+	public DbTable setName(String name) {
+		this.name = name;
+		return this;
+	}
+	
 	public ArrayList<DbColumn> getColumns () {
 		return this.columnList;
 	}

@@ -70,7 +70,7 @@ class DashboardsApplication {
 		$options['FAIL_LIMIT'] = FAIL_LIMIT;
 
 		// get products in database
-		$q = $this->db->prepare("SELECT * FROM product");
+		$q = $this->db->prepare("SELECT * FROM product ORDER BY product_type ASC");
 		$q->execute();
 
 		$results = $q->fetchAll();

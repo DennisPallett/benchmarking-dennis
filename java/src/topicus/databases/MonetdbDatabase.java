@@ -69,6 +69,20 @@ public class MonetdbDatabase extends AbstractDatabase {
 		return nodeCount;
 	}
 	
+	public MonetdbInstance getInstanceForTenant (Connection masterConn, int tenantId) {
+		MonetdbInstance instance = null;
+		
+		// get all instances
+		ArrayList<MonetdbInstance> instanceList = this.getInstanceList(masterConn);
+		int instanceCount = instanceList.size();
+		
+		// calculate which instance to use
+		int instanceId = ((tenantId-1) % instanceCount) + 1;
+		
+		// return instance (index = instanceId-1)
+		return instanceList.get(instanceId-1);
+	}
+	
 	public ArrayList<MonetdbInstance> getInstanceList (Connection conn) {
 		ArrayList<MonetdbInstance> list = new ArrayList<MonetdbInstance>();
 		
@@ -129,10 +143,20 @@ public class MonetdbDatabase extends AbstractDatabase {
 	public int[] deployData(Connection conn, String fileName, String tableName)
 			throws SQLException {
 		Statement q = conn.createStatement();
+		
+		String sql = "COPY ";
+		
+		// necessary to speed up insertion of fact table
+		// should really happen for EVERY table
+		if (tableName.equals("fact_exploitatie")) {
+			sql += " 14961660 RECORDS ";
+		}
+		
+		sql += " INTO \"" + tableName + "\" FROM '" + fileName + "' " +
+				"USING DELIMITERS '#','\n' NULL AS 'NULL';";
 			
 		long start = System.currentTimeMillis();
-		int rows = q.executeUpdate("COPY INTO \"" + tableName + "\" FROM '" + fileName + "' " +
-				"USING DELIMITERS '#','\n' NULL AS 'NULL';");
+		int rows = q.executeUpdate(sql);
 		int runTime = (int) (System.currentTimeMillis() - start);
 				
 		return new int[]{runTime, (int)rows};
@@ -181,9 +205,9 @@ public class MonetdbDatabase extends AbstractDatabase {
 			if (col.isPrimaryKey()) {
 				colQuery += " primary key";
 			} else if (col.isUnique()) {
-				// plum does not support unique
+				colQuery += " unique";
 			} else if (col.isForeignKey()) {
-				colQuery += " references \"" + col.getForeignTable() + "\" (\"" + col.getForeignColumn() + "\")";
+				//colQuery += " references \"" + col.getForeignTable() + "\" (\"" + col.getForeignColumn() + "\")";
 			}
 			
 			if (col.allowNull() == false) {
@@ -295,6 +319,9 @@ public class MonetdbDatabase extends AbstractDatabase {
 			return this.id;
 		}
 		
+		public String getDisplayName () {
+			return "#" + this.getId() + " (" + this.getHost() + ":" + this.getPort() + ")"; 
+		}
 	}
 	
 }

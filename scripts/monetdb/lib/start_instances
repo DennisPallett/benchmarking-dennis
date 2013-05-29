@@ -74,7 +74,7 @@ do
     echo "  Done"   
 
     # create master database
-    echo "  Creating instance database 'INSTANCE_DB'..."
+    echo "  Creating instance database '$INSTANCE_DB'..."
     monetdb -p "$PORT" create "$INSTANCE_DB" 
     echo "  Done"
 

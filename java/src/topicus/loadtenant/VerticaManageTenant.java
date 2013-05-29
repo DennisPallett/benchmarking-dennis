@@ -1,5 +1,6 @@
 package topicus.loadtenant;
 
+import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -8,10 +9,10 @@ import java.sql.Statement;
 public class VerticaManageTenant extends ManageTenant {
 
 	@Override
-	public void deleteDataFromTable(String tableName, String tenantField, int tenantId)
+	public void deleteDataFromTable(Connection conn, String tableName, String tenantField, int tenantId)
 			throws SQLException {
 				
-		PreparedStatement q = this.conn.prepareStatement("DELETE /*+ direct */ FROM " + tableName + " WHERE " + tenantField + " = ?");
+		PreparedStatement q = conn.prepareStatement("DELETE /*+ direct */ FROM " + tableName + " WHERE " + tenantField + " = ?");
 		q.setInt(1,  tenantId);
 		
 		try {
@@ -27,9 +28,9 @@ public class VerticaManageTenant extends ManageTenant {
 	}
 
 	@Override
-	public void deleteDataFromClosure(int beginKey, int endKey)
+	public void deleteDataFromClosure(Connection conn, int beginKey, int endKey)
 			throws SQLException {
-		PreparedStatement q =this.conn.prepareStatement("DELETE /*+ direct */ FROM closure_organisatie " +
+		PreparedStatement q = conn.prepareStatement("DELETE /*+ direct */ FROM closure_organisatie " +
 				"WHERE organisatie_key >= ? AND organisatie_key <= ?");
 		q.setInt(1,  beginKey);
 		q.setInt(2,  endKey);

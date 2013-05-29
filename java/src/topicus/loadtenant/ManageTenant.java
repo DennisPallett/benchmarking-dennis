@@ -7,10 +7,10 @@ import java.sql.SQLException;
 public class ManageTenant {
 	protected Connection conn;
 	
-	public void deleteDataFromTable(String tableName, String tenantField, int tenantId)
+	public void deleteDataFromTable(Connection conn, String tableName, String tenantField, int tenantId)
 			throws SQLException {
 				
-		PreparedStatement q = this.conn.prepareStatement("DELETE FROM " + tableName + " WHERE " + tenantField + " = ?");
+		PreparedStatement q = conn.prepareStatement("DELETE FROM " + tableName + " WHERE " + tenantField + " = ?");
 		q.setInt(1,  tenantId);
 		
 		try {
@@ -20,9 +20,9 @@ public class ManageTenant {
 		}
 	}
 
-	public void deleteDataFromClosure(int beginKey, int endKey)
+	public void deleteDataFromClosure(Connection conn, int beginKey, int endKey)
 			throws SQLException {
-		PreparedStatement q =this.conn.prepareStatement("DELETE FROM closure_organisatie " +
+		PreparedStatement q = conn.prepareStatement("DELETE FROM closure_organisatie " +
 				"WHERE organisatie_key >= ? AND organisatie_key <= ?");
 		q.setInt(1,  beginKey);
 		q.setInt(2,  endKey);

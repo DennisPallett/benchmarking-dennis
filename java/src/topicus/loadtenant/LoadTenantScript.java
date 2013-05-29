@@ -106,13 +106,17 @@ public class LoadTenantScript extends AbstractTenantScript {
 			System.exit(0);
 		}
 	}
-		
+	
 	protected void _deployData(String tableFile, String tableName) throws SQLException {
-		this._deleteOldData(tableName);
+		this._deployData(this.database,  this.conn, tableFile, tableName);
+	}
+		
+	protected void _deployData(AbstractDatabase database, Connection conn, String tableFile, String tableName) throws SQLException {
+		this._deleteOldData(conn, tableName);
 		
 		this.printLine("Deploying `" + tableFile + "` into `" + tableName + "`");	
 		
-		int[] ret = this.database.deployData(this.conn, this.tenantDirectory + tableFile,  tableName);
+		int[] ret = database.deployData(conn, this.tenantDirectory + tableFile,  tableName);
 		
 		int runTime = ret[0];
 		int rows = ret[1];
@@ -152,9 +156,13 @@ public class LoadTenantScript extends AbstractTenantScript {
 		File currOutputFile = new File(this.outputFile);
 		if (currOutputFile.exists()) {
 			this.printError("Results file already exists!");
-			if (this.cliArgs.hasOption("stop-on-overwrite") || this.confirmBoolean("Overwrite existing file? (y/n): ") == false) {
-				throw new OverwriteException();
+			if (cliArgs.hasOption("overwrite-existing") == false) {
+				if (this.cliArgs.hasOption("stop-on-overwrite") || this.confirmBoolean("Overwrite existing file? (y/n): ") == false) {
+					throw new OverwriteException();
+				}
 			}
+			
+			printLine("Overwriting existing results");
 			
 			currOutputFile.delete();
 			currOutputFile.createNewFile();

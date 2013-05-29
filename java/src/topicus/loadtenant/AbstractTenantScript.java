@@ -44,8 +44,12 @@ public abstract class AbstractTenantScript extends DatabaseScript {
 	public Connection getConnection () {
 		return this.conn;
 	}
-
+	
 	protected void _deleteOldData(String tableName) throws SQLException {
+		this._deleteOldData(this.conn, tableName);
+	}
+
+	protected void _deleteOldData(Connection conn, String tableName) throws SQLException {
 		this.printLine("Deleting old tenant data from `" + tableName + "`");
 		
 		if (tableName.equals("closure_organisatie")) {
@@ -74,7 +78,7 @@ public abstract class AbstractTenantScript extends DatabaseScript {
 				// don't care
 			}
 			
-			this.manageTenant.deleteDataFromClosure(beginPk, endPk);
+			this.manageTenant.deleteDataFromClosure(conn, beginPk, endPk);
 		} else {
 			String tenantField = "";
 						
@@ -101,7 +105,7 @@ public abstract class AbstractTenantScript extends DatabaseScript {
 				throw e;
 			}
 						
-			this.manageTenant.deleteDataFromTable(tableName, tenantField, this.tenantId);
+			this.manageTenant.deleteDataFromTable(conn, tableName, tenantField, this.tenantId);
 		}		
 		
 		this.printLine("Old data deleted");
