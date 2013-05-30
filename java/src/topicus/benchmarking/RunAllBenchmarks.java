@@ -69,6 +69,15 @@ public class RunAllBenchmarks extends RunDatabaseScript {
 				.withLongOpt("aws-credentials")
 				.create()
 		);	
+		
+		options.addOption(
+				OptionBuilder
+				.hasArg()
+				.withType(Number.class)
+				.withDescription("Specify the number of tenants to start with. Allows skipping some tests")
+				.withLongOpt("start")
+				.create()
+		);	
 	}
 	
 	public void run (String[] args)  throws Exception {

@@ -35,6 +35,8 @@ public class AllBenchmarksScript extends DatabaseScript {
 		}
 	}	
 	
+	protected int start = -1;
+	
 	protected int nodes;
 	protected int nodeCount;
 	
@@ -75,12 +77,16 @@ public class AllBenchmarksScript extends DatabaseScript {
 		}
 		
 		for(int tenant : tenants) {
-			this._deployTenants(tenant);
-			
-			for(int user : users) {
-				if (tenant >= user) {					
-					this._runBenchmark(tenant, user);
+			if (tenant >= start) {
+				this._deployTenants(tenant);
+				
+				for(int user : users) {
+					if (tenant >= user) {					
+						this._runBenchmark(tenant, user);
+					}
 				}
+			} else {
+				printLine("Skipping " + tenant + " tenants");
 			}
 		}		
 		
@@ -167,6 +173,9 @@ public class AllBenchmarksScript extends DatabaseScript {
 				throw new InvalidBucketException("Specified S3 bucket `" + this.bucketName + "` does not exist");
 			}
 		}
+		
+		// specific starting point
+		this.start = Integer.parseInt(cliArgs.getOptionValue("start", "-1"));
 	}
 	
 	protected void _deployTenants(int numberOfTenants) throws Exception {
