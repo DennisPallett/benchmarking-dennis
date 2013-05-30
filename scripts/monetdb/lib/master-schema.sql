@@ -6,5 +6,6 @@ CREATE TABLE instance (
 
 CREATE TABLE tenant (
 	tenant_id INT PRIMARY KEY NOT NULL,
-	instance SMALLINT REFERENCES instance (instance_id)
+	tenant_host VARCHAR(100) NOT NULL,
+	tenant_port SMALLINT NOT NULL
 );

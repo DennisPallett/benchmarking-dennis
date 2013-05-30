@@ -1,5 +1,26 @@
 #!/bin/bash
 
+function setup_instances () {
+    INSTANCE_HOST=$1
+
+     echo "Setting up instances on $INSTANCE_HOST..."
+
+    # verify ssh connectivity
+    echo "Verifying SSH connectivty with host $INSTANCE_HOST..."
+    SSH_OUTPUT=`ssh "$INSTANCE_HOST" echo "$INSTANCE_HOST"`
+    if [ "$SSH_OUTPUT" != "$INSTANCE_HOST" ]; then
+        echo "ERROR: no SSH connectivity with host $INSTANCE_HOST"
+        exit 1
+    else
+        echo "SSH connectivity verified and working!"
+    fi
+
+    # setup instances on host
+    ssh "$INSTANCE_HOST" "$SCRIPT_DIR/lib/start_instances \"$MASTER_HOST\" $MASTER_PORT $NUMBER_OF_INSTANCES \"$INSTANCE_DIR\" $INSTANCE_PORT \"$INSTANCE_DB\""
+
+    echo "Instances on host $INSTANCE_HOST up and running!"
+}
+
 echo "===== MonetDB Start Cluster Script ====="
 echo "This script is used to setup and start a MonetDB cluster"
 echo ""
@@ -69,24 +90,10 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     echo "Setting up instances..."
     
     # loop through hosts file
-    while read INSTANCE_HOST; do
-        echo "Setting up instances on $INSTANCE_HOST..."
-
-        # verify ssh connectivity
-        echo "Verifying SSH connectivty with host $INSTANCE_HOST..."
-        SSH_OUTPUT=`ssh "$INSTANCE_HOST" echo "$INSTANCE_HOST"`
-        if [ "$SSH_OUTPUT" != "$INSTANCE_HOST" ]; then
-            echo "ERROR: no SSH connectivity with host $INSTANCE_HOST"
-            exit 1
-        else
-            echo "SSH connectivity verified and working!"
-        fi
-
-        # setup instances on host
-        ssh "$INSTANCE_HOST" "$SCRIPT_DIR/lib/start_instances \"$MASTER_HOST\" $MASTER_PORT $NUMBER_OF_INSTANCES \"$INSTANCE_DIR\" $INSTANCE_PORT \"$INSTANCE_DB\""
-
-        echo "Instances on host $INSTANCE_HOST up and running!"
-    done < "$HOSTS_FILE"
+    for INSTANCE_HOST in `cat "$HOSTS_FILE"`; do
+       setup_instances "$INSTANCE_HOST"
+       #echo "$INSTANCE_HOST"
+    done
 
     echo "Instances up and running!"
     echo "All finished, MonetDB cluster is setup!"
