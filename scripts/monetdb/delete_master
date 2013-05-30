@@ -6,24 +6,5 @@ echo ""
 
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-# read config file
-source "$SCRIPT_DIR/setup.cfg"
-
-if [ -f "$MASTER_DIR/merovingian.pid" ]; then
-    echo "Stopping master database..."
-    monetdb -p "$MASTER_PORT" stop -a
-    echo "Done"
-
-    echo "Stopping master instance..."
-    monetdbd stop "$MASTER_DIR"
-    echo "Done"
-else
-    echo "Master instance is not running!"
-fi
-
-echo "Deleting master directory..."
-rm -rf "$MASTER_DIR"
-echo "Done"
-
-echo "Master has been stopped and deleted"
-echo "Finished!"
+# run actual master script
+"$SCRIPT_DIR/lib/delete_master" "$1"

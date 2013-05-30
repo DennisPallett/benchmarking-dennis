@@ -11,7 +11,7 @@ fi
 # validate config file
 CONFIG_FILE=$1
 if [ "$CONFIG_FILE" == "" -o ! -f "$CONFIG_FILE" ]; then
-    echo "ERROR: 2nd argument must be a valid config file!"
+    echo "ERROR: 1st argument must be a valid config file!"
     exit 1
 fi
 

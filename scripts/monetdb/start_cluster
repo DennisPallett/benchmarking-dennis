@@ -45,6 +45,22 @@ MASTER_HOST=`hostname`
 read -p "Are you sure you want to setup MonetDB cluster (y/n)? " -n 1 -r
 echo ""
 if [[ $REPLY =~ ^[Yy]$ ]]; then
+    # check if cluster directory already exists
+    CLUSTER_DIR="/mnt/.monetdb-cluster"
+    if [ -d "$CLUSTER_DIR" ]; then
+        echo "ERROR: cluster directory already exists! Is there a cluster running already?"
+        exit 1
+    fi
+
+    # create cluster directory
+    echo "Setting up cluster directory..."
+    mkdir -p "$CLUSTER_DIR"
+    
+    # copy config file to cluster directory
+    cp "$CONFIG_FILE" "$CLUSTER_DIR/config.cfg"
+
+    echo "Done"
+
     echo "Setting up master..."
     
     "$SCRIPT_DIR/lib/start_master" "$CONFIG_FILE"

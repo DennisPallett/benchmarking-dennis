@@ -23,6 +23,50 @@ echo ""
 if [[ $REPLY =~ ^[Yy]$ ]]; then
     echo "Deleting MonetDB cluster..."
 
+    CLUSTER_DIR="/mnt/.monetdb-cluster"
+    if [ ! -d "$CLUSTER_DIR" ]; then
+        echo "ERROR: cluster directory does not exist! Is a cluster running???"
+        exit 1
+    fi
+
+    # load config file
+    CONFIG_FILE="$CLUSTER_DIR/config.cfg"
+    source "$CONFIG_FILE"
+
+    echo "user=monetdb" >> ".monetdb"
+    echo "password=monetdb" >> ".monetdb"
+
+    echo "Retrieving list of instance hosts..."
+    HOSTS_FILE=".hosts"
+    mclient -d "master" -p "$MASTER_PORT" -f csv -s "SELECT DISTINCT(instance_host) FROM instance" > "$HOSTS_FILE"
+    echo "Done"
+
+    rm ".monetdb"
+
+    NUMBER_OF_HOSTS=`wc -l "$HOSTS_FILE" | awk '{print $1'}`
+
+    echo "Found $NUMBER_OF_HOSTS instance hosts"
+
+    echo "Deleting instances..."
+    while read INSTANCE_HOST; do
+        echo "Deleting instances on $INSTANCE_HOST..."
+
+        # delete instances on host
+        ssh "$INSTANCE_HOST" "$SCRIPT_DIR/lib/delete_instances \"$MASTER_HOST\" $MASTER_PORT \"$INSTANCE_DIR\""
+
+        echo "Finished deleting instances on $INSTANCE_HOST"
+    done < "$HOSTS_FILE"
+    echo "Deleted all instances!"
+
+    # delete master
+    echo "Deleting master..."
+    "$SCRIPT_DIR/lib/delete_master" "$CONFIG_FILE"
+    echo "Master deleted"
+
+
+    # finished
+    echo "Cluster has been deleted"
+    echo "Finished!" 
 else
     echo "Exiting!"
 fi

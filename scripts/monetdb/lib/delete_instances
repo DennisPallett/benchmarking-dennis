@@ -26,8 +26,8 @@ fi
 echo "user=monetdb" >> ".monetdb"
 echo "password=monetdb" >> ".monetdb"
 
-echo "Deleting instances..."
 HOSTNAME=`hostname`
+echo "Deleting instances on $HOSTNAME..."
 for subDir in $INSTANCE_DIR/instance-* ; do
     if [ -d $subDir ]; then
         # get port of instance
@@ -35,7 +35,7 @@ for subDir in $INSTANCE_DIR/instance-* ; do
         PORT=`echo $PORT | awk -F '[ ,]+' '{print $4}' -`
 
         # stop all databases
-        echo "  Stopping all databases on instance $subDir..."
+        echo "  Stopping all databases on instance $subDir on host $HOSTNAME..."
         monetdb -p "$PORT" stop -a
         echo "  Done"
 
