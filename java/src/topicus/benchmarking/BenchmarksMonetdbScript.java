@@ -12,6 +12,8 @@ public class BenchmarksMonetdbScript extends BenchmarksScript {
 	protected MonetdbDatabase database;
 	protected ArrayList<MonetdbInstance> instanceList;
 	
+	protected Connection conn;
+	
 	public BenchmarksMonetdbScript(String type, MonetdbDatabase database) {
 		super(type, database);
 		
@@ -22,9 +24,22 @@ public class BenchmarksMonetdbScript extends BenchmarksScript {
 		return this.instanceList;
 	}
 	
+	public Connection getMasterConnection () {
+		return this.conn;
+	}
+	
+	protected void _setupUsers () throws Exception {
+		super._setupUsers();
+		
+		// close connection to master (no longer needed!)
+		printLine("Closing connection to master...");
+		conn.close();		
+		printLine("Done");
+	}
+	
 	protected void _getDatabaseInfo () throws SQLException {				
 		// setup connection
-		Connection conn = this.database.setupConnection("node1");
+		conn = this.database.setupConnection("node1");
 		
 		this.tenantCount = this.database.getTenantCount(conn);
 		
@@ -35,8 +50,6 @@ public class BenchmarksMonetdbScript extends BenchmarksScript {
 		printLine("Retrieving list of instances");
 		this.instanceList = database.getInstanceList(conn);
 		printLine("Found " + instanceList.size() + " instances");
-		
-		conn.close();
 	}
 
 }

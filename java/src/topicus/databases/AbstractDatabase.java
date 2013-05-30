@@ -35,8 +35,8 @@ public abstract class AbstractDatabase extends Observable {
 	public Connection setupConnection (String host) throws SQLException {
 		// setup connection strings
 		String url = this.getJdbcUrl() + host + ":" + this.port;
-		if (this.name.length() > 0) {
-			url += "/" + this.name;
+		if (this.getName().length() > 0) {
+			url += "/" + this.getName();
 		}
 					
 		// setup connection

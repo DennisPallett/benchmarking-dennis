@@ -13,6 +13,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 import java.util.Random;
 
@@ -78,21 +79,86 @@ public class MonetdbDatabase extends AbstractDatabase {
 		return nodeCount;
 	}
 	
-	public MonetdbInstance getInstanceForTenant (ArrayList<MonetdbInstance> instanceList, int tenantId) {
-		int instanceCount = instanceList.size();
-		
-		// calculate which instance to use
-		int instanceId = ((tenantId-1) % instanceCount) + 1;
-		
-		// return instance (index = instanceId-1)
-		return instanceList.get(instanceId-1);
-	}
-	
 	public MonetdbInstance getInstanceForTenant (Connection masterConn, int tenantId) {	
+		String host = null;
+		int port = -1;
+		
+		// find instance for tenant
+		try {
+			PreparedStatement q = masterConn.prepareStatement("SELECT * FROM tenant WHERE tenant_id = ?");
+			q.setInt(1,  tenantId);
+			
+			ResultSet results = q.executeQuery();
+			
+			if (results.next()) {
+				host = results.getString("tenant_host");
+				port = results.getInt("tenant_port");
+			}
+			
+			results.close();
+			q.close();
+		} catch (SQLException e) {
+			e.printStackTrace();
+			System.exit(1);
+		}
+					
 		// get all instances
 		ArrayList<MonetdbInstance> instanceList = this.getInstanceList(masterConn);
 		
-		return this.getInstanceForTenant(instanceList, tenantId);		
+		if (host == null) {
+			HashMap<String, Integer> hostCount = new HashMap<String, Integer>();
+			
+			for (MonetdbInstance instance : instanceList) {
+				if (hostCount.containsKey(instance.getHost()) == false) {
+					hostCount.put(instance.getHost(),  0);
+				}
+				
+				// add tenant count of instance to host count
+				hostCount.put(instance.getHost(),  hostCount.get(instance.getHost()) + instance.getTenantCount());
+			}
+			
+			// find host with fewest tenants
+			int minCount = Integer.MAX_VALUE;
+			for (Map.Entry<String, Integer> entry : hostCount.entrySet()) {
+				int count = entry.getValue();
+				
+				if (count < minCount) {
+					minCount = count;
+					host = entry.getKey();
+				}
+			}
+			
+			if (host == null) {
+				System.err.println("ERROR: unable to find host with fewest tenants");
+				System.exit(1);
+			}
+			
+			// find instance on host with fewest tenants
+			minCount = Integer.MAX_VALUE;
+			for(MonetdbInstance instance : instanceList) {
+				if (instance.getHost().equals(host)) {
+					if (instance.getTenantCount() < minCount) {
+						minCount = instance.getTenantCount();
+						port = instance.getPort();
+					}
+				}
+			}
+		}
+		
+		// find instance in list
+		MonetdbInstance retInstance = null;
+		for(MonetdbInstance instance : instanceList) {
+			if (instance.getHost().equals(host) && instance.getPort() == port) {
+				retInstance = instance;
+			}
+		}
+		
+		if (retInstance == null) {
+			System.err.println("ERROR: unable to find instance for tenant #" + tenantId);
+			System.exit(1);
+		}
+		
+		return retInstance;		
 	}
 	
 	public ArrayList<MonetdbInstance> getInstanceList (Connection conn) {
@@ -101,7 +167,11 @@ public class MonetdbDatabase extends AbstractDatabase {
 		Statement q;
 		try {
 			q = conn.createStatement();
-			ResultSet results = q.executeQuery("SELECT * FROM instance ORDER BY instance_id ASC");
+			ResultSet results = q.executeQuery(
+				"SELECT *, COUNT(tenant_id) AS tenant_count FROM instance" +
+				" LEFT JOIN tenant ON tenant_host = instance_host AND tenant_port = instance_port" +
+				" GROUP BY instance_host, instance_port;"
+			);
 						
 			int id = 1;
 			while(results.next()) {
@@ -109,7 +179,7 @@ public class MonetdbDatabase extends AbstractDatabase {
 				instance.setId(id);
 				instance.setPort(results.getInt("instance_port"));
 				instance.setHost(results.getString("instance_host"));
-				instance.setName("exploitatie");
+				instance.setTenantCount(results.getInt("tenant_count"));
 				
 				list.add(instance);
 				id++;
@@ -261,8 +331,8 @@ public class MonetdbDatabase extends AbstractDatabase {
 	public Connection setupConnection (String host) throws SQLException {
 		// setup connection strings
 		String url = this.getJdbcUrl() + host + ":" + port;
-		if (this.name.length() > 0) {
-			url += "/" + this.name;
+		if (this.getName().length() > 0) {
+			url += "/" + this.getName();
 		}
 		
 		Properties props = new Properties();
@@ -283,8 +353,8 @@ public class MonetdbDatabase extends AbstractDatabase {
 	public Connection setupConnection () throws SQLException {
 		// setup connection strings
 		String url = this.getJdbcUrl() + this.host + ":" + port;
-		if (this.name.length() > 0) {
-			url += "/" + this.name;
+		if (this.getName().length() > 0) {
+			url += "/" + this.getName();
 		}
 		
 		Properties props = new Properties();
@@ -320,7 +390,7 @@ public class MonetdbDatabase extends AbstractDatabase {
 			this.owner.printLine("Setting up connections for user #" + this.userId);
 			
 			// get instance for this tenant (=userId)
-			MonetdbInstance instance = database.getInstanceForTenant(owner.getInstanceList(), this.userId);
+			MonetdbInstance instance = database.getInstanceForTenant(owner.getMasterConnection(), this.userId);
 						
 			// setup NR_OF_QUERIES connections (1 for each query) to instance
 			for(int i=0; i < NR_OF_QUERIES; i++) {			
@@ -335,6 +405,7 @@ public class MonetdbDatabase extends AbstractDatabase {
 	
 	public class MonetdbInstance extends MonetdbDatabase {
 		protected int id = -1;
+		protected int tenantCount = 0;
 		
 		public void setId(int id) {
 			this.id = id;
@@ -342,6 +413,18 @@ public class MonetdbDatabase extends AbstractDatabase {
 		
 		public int getId() {
 			return this.id;
+		}
+		
+		public String getName () {
+			return "exploitatie";
+		}
+		
+		public void setTenantCount(int count) {
+			this.tenantCount = count;
+		}
+		
+		public int getTenantCount() {
+			return this.tenantCount;
 		}
 		
 		public String getDisplayName () {
