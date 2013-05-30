@@ -68,7 +68,7 @@ echo "/dev/md0  /mnt  $FS_TYPE    $MOUNT_OPTIONS 0 0" >> /etc/fstab.2
 mv /etc/fstab.2 /etc/fstab
 
 # remove --name from conf which screws auto-mounting after reboot
-$HOSTNAME=`hostname`
+HOSTNAME=`hostname`
 sed -i "s/--name=NAS:0 / /g" "/etc/mdadm.conf"
 sed -i "s/name=$HOSTNAME:0 / /g" "/etc/mdadm.conf"
 
