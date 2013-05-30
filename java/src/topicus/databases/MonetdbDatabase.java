@@ -324,7 +324,7 @@ public class MonetdbDatabase extends AbstractDatabase {
 						
 			// setup NR_OF_QUERIES connections (1 for each query) to instance
 			for(int i=0; i < NR_OF_QUERIES; i++) {			
-				this.owner.printLine("Setting up connection #" + (i+1) + " to " + instance.getDisplayName() + " for user #" + this.userId);
+				this.owner.printLine("Setting up connection #" + (i+1) + " to instance " + instance.getDisplayName() + " for user #" + this.userId);
 				
 				this.conns[i] = instance.setupConnection();
 							

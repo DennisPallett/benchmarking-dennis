@@ -63,6 +63,10 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     "$SCRIPT_DIR/lib/delete_master" "$CONFIG_FILE"
     echo "Master deleted"
 
+    # delete cluster directory
+    echo "Deleting cluster directory..."
+    rm -rf "$CLUSTER_DIR"
+    echo "Done"
 
     # finished
     echo "Cluster has been deleted"

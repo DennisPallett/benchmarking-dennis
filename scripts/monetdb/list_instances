@@ -1,0 +1,29 @@
+#!/bin/bash
+
+echo "===== MonetDB List Instances Script ====="
+echo "This script shows a list of instances in a MonetDB cluster"
+echo ""
+
+# The script needs admin rights
+if [ `/usr/bin/id -u` -ne 0 ]; then
+    echo "ERROR: Run as sudo / root"
+    exit 1
+fi
+
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+CLUSTER_DIR="/mnt/.monetdb-cluster"
+
+if [ ! -d "$CLUSTER_DIR" ]; then
+    echo "ERROR: cluster directory does not exist. Is the cluster running?"
+    exit 1
+fi
+
+echo "user=monetdb" >> ".monetdb"
+echo "password=monetdb" >> ".monetdb"
+
+# show list of instances
+echo "MonetDB Instances:"
+mclient -d master -p 54321 -f sql -s "SELECT *, COUNT(tenant_id) AS tenant_count FROM instance LEFT JOIN tenant ON instance_host = tenant_host AND instance_port = tenant_port GROUP BY instance_host, instance_port ORDER BY instance_host ASC, instance_port ASC;"
+
+rm ".monetdb"
