@@ -188,11 +188,15 @@ public class JdbcBenchmarkRunner extends AbstractBenchmarkRunner {
 			startTimes[queryId-1] = System.currentTimeMillis();
 			result = stmt.executeQuery();
 			runTime = (int) ((int) System.currentTimeMillis() - startTimes[queryId-1]);
-			
+						
 			if (result.next() == false) {
 				owner.printError("Warning: got no results for query:");
 				owner.printError(query);
 			}
+			
+			// free resources
+			result.close();
+			stmt.close();
 			
 			startTimes[queryId-1] = -1;
 		} catch (SQLException e) {
