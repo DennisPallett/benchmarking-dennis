@@ -155,7 +155,7 @@ public class JdbcBenchmarkRunner extends AbstractBenchmarkRunner {
 		ResultSet result = null;
 		int runTime = 0;
 			
-		PreparedStatement stmt = null;
+		Statement stmt = null;
 		
 		Connection conn = this.conns[queryId-1];
 		
@@ -176,17 +176,25 @@ public class JdbcBenchmarkRunner extends AbstractBenchmarkRunner {
 				proc.setString(i+1,  args[i]);
 			}
 			
-			this.statements[queryId-1] = proc;			
+			this.statements[queryId-1] = proc;	
+			stmt = (PreparedStatement) this.statements[queryId-1];
 		} else {		
-			this.statements[queryId-1] = conn.prepareStatement(query);
+			//this.statements[queryId-1] = conn.prepareStatement(query);
+			stmt = conn.createStatement();
+			this.statements[queryId-1] = stmt;
 		}	
-				
-		stmt = (PreparedStatement) this.statements[queryId-1];
-				
+								
 		try {
 			isCancelled[queryId-1] = false;
 			startTimes[queryId-1] = System.currentTimeMillis();
-			result = stmt.executeQuery();
+			
+			if (stmt instanceof PreparedStatement) {
+				PreparedStatement prepStmt = (PreparedStatement) stmt;
+				result = prepStmt.executeQuery();
+			} else {
+				result = stmt.executeQuery(query);				
+			}
+			
 			runTime = (int) ((int) System.currentTimeMillis() - startTimes[queryId-1]);
 						
 			if (result.next() == false) {
