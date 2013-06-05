@@ -201,18 +201,6 @@ public class JdbcBenchmarkRunner extends AbstractBenchmarkRunner {
 			if (result.next() == false) {
 				owner.printError("Warning: got no results for query:");
 				owner.printError(query);
-			} else if (queryId == 1) {
-				// get metadata
-				ResultSetMetaData meta = result.getMetaData();
-				
-				boolean hasNext = true;
-				while(hasNext) {
-					for(int i=1; i < meta.getColumnCount(); i++) {
-						owner.printLine(result.getString(i));
-					}
-					
-					hasNext = result.next();
-				}
 			}
 			
 			// free resources
