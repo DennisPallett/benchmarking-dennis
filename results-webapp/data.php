@@ -270,7 +270,7 @@ class FastestOverviewDashboard extends Dashboard {
 				WHERE b2.benchmark_avg_querytime = MIN(b1.benchmark_avg_querytime)
 				AND b2.benchmark_tenants = b1.benchmark_tenants
 				AND b2.benchmark_users = b1.benchmark_users
-				AND b2.benchmark_nodes = b2.benchmark_nodes
+				AND b2.benchmark_nodes = b2.benchmark_nodes LIMIT 1
 			) AS fastest_product_query,
 			(
 				SELECT product_name FROM benchmark AS b2 
@@ -278,7 +278,7 @@ class FastestOverviewDashboard extends Dashboard {
 				WHERE b2.benchmark_avg_settime = MIN(b1.benchmark_avg_settime)
 				AND b2.benchmark_tenants = b1.benchmark_tenants
 				AND b2.benchmark_users = b1.benchmark_users
-				AND b2.benchmark_nodes = b2.benchmark_nodes
+				AND b2.benchmark_nodes = b2.benchmark_nodes LIMIT 1
 			) AS fastest_product_set
 			FROM benchmark AS b1
 			GROUP BY b1.benchmark_tenants, b1.benchmark_users, b1.benchmark_nodes
