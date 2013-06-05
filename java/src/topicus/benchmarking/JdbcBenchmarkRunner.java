@@ -4,6 +4,7 @@ import java.sql.CallableStatement;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Iterator;
@@ -200,6 +201,18 @@ public class JdbcBenchmarkRunner extends AbstractBenchmarkRunner {
 			if (result.next() == false) {
 				owner.printError("Warning: got no results for query:");
 				owner.printError(query);
+			} else if (queryId == 1) {
+				// get metadata
+				ResultSetMetaData meta = result.getMetaData();
+				
+				boolean hasNext = true;
+				while(hasNext) {
+					for(int i=1; i < meta.getColumnCount(); i++) {
+						owner.printLine(result.getString(i));
+					}
+					
+					hasNext = result.next();
+				}
 			}
 			
 			// free resources
